@@ -1,7 +1,7 @@
 import csv
 import matplotlib.pyplot as plt
 
-TRAIN_BODIES = 'train_bodies.csv'
+TRAIN_BODIES = '../fnc-1-data/train_bodies.csv'
 with open(TRAIN_BODIES, 'rb') as f:
     reader = csv.reader(f)
     header = reader.next()
