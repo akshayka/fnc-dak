@@ -311,7 +311,7 @@ class RNNModel():
 def do_train(args):
     # Set up some parameters.
     bodies, stances = load_and_preprocess_fnc_data(args)
-    # read
+    gensim
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Trains and tests RNN model')
@@ -320,8 +320,8 @@ if __name__ == "__main__":
     command_parser = subparsers.add_parser('train', help='')
     command_parser.add_argument('-dtb', '--train-bodies', type=argparse.FileType('r'), default="fnc-1-data/train_bodies.csv", help="Training data")
     command_parser.add_argument('-dts', '--train-stances', type=argparse.FileType('r'), default="fnc-1-data/train_stances.csv", help="Training data")
-    command_parser.add_argument('-v', '--vocab', type=argparse.FileType('r'), default="supp_data/vocab.txt", help="Path to vocabulary file")
-    command_parser.add_argument('-vv', '--vectors', type=argparse.FileType('r'), default="supp_data/wordVectors.txt", help="Path to word vectors file")
+    # command_parser.add_argument('-v', '--vocab', type=argparse.FileType('r'), default="supp_data/vocab.txt", help="Path to vocabulary file")
+    # command_parser.add_argument('-vv', '--vectors', type=argparse.FileType('r'), default="supp_data/wordVectors.txt", help="Path to word vectors file")
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
