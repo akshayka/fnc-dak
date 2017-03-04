@@ -29,13 +29,14 @@ class Config:
     instantiation.
     """
     def __init__(self, n_features=1, n_classes=4, dropout=0.5,
-        embed_size=300, hidden_size=300,
+        embed_size=300, hidden_size=300, transform_size,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.dropout = dropout
         self.embed_size = embed_size
         self.hidden_size = hidden_size
+        self.transform_size = transform_size
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.lr = lr
@@ -43,7 +44,8 @@ class Config:
             # Where to save things.
             self.output_path = output_path
         else:
-            self.output_path = "results/window/{:%Y%m%d_%H%M%S}/".format(datetime.now())
+            self.output_path = "results/window/{:%Y%m%d_%H%M%S}/".format(
+                datetime.now())
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
         self.log_output = self.output_path + "log"
@@ -96,7 +98,7 @@ def pad_sequences(data, n_features, max_length):
     return ret
 
 
-class RNNModel():
+class RNNModel(Model):
     """
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
@@ -105,15 +107,19 @@ class RNNModel():
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
 
-        These placeholders are used as inputs by the rest of the model building and will be fed
-        data during training.  Note that when "None" is in a placeholder's shape, it's flexible
-        (so we can use different batch sizes without rebuilding the model).
+        These placeholders are used as inputs by the rest of the model building
+        and will be fed data during training.  Note that when "None" is in a
+        placeholder's shape, it's flexible (so we can use different batch sizes
+        without rebuilding the model).
 
         Adds following nodes to the computational graph
 
-        inputs_placeholder: Input placeholder tensor of  shape (None, self.max_length, n_features), type tf.int32
-        labels_placeholder: Labels placeholder tensor of shape (None, self.max_length), type tf.int32
-        dropout_placeholder: Dropout value placeholder (scalar), type tf.float32
+        inputs_placeholder: Input placeholder tensor of shape
+            (None, self.max_length, n_features), type tf.int32
+        labels_placeholder: Labels placeholder tensor of shape
+            (None, self.max_length), type tf.int32
+        dropout_placeholder: Dropout value placeholder (scalar),
+            type tf.float32
 
             self.inputs_placeholder
             self.labels_placeholder
@@ -158,24 +164,25 @@ class RNNModel():
 
 
     def add_embedding(self):
-        """Adds an embedding layer that maps from input tokens (integers) to vectors and then
-        concatenates those vectors:
+        """Adds an embedding layer that maps from input tokens (integers) to
+        vectors and then concatenates those vectors:
 
         TODO:
-            - Create an embedding tensor and initialize it with self.pretrained_embeddings.
-            - Use the inputs_placeholder to index into the embeddings tensor, resulting in a
-              tensor of shape (None, max_length, n_features, embed_size).
-            - Concatenates the embeddings by reshaping the embeddings tensor to shape
-              (None, max_length, n_features * embed_size).
+            - Create an embedding tensor and initialize it with
+              self.pretrained_embeddings.
+            - Use the inputs_placeholder to index into the embeddings tensor,
+              resulting in a tensor of shape
+              (None, max_length, n_features, embed_size).
+            - Concatenates the embeddings by reshaping the embeddings
+              tensor to shape (None, max_length, n_features * embed_size).
 
         HINTS:
             - You might find tf.nn.embedding_lookup useful.
-            - You can use tf.reshape to concatenate the vectors. See
-              following link to understand what -1 in a shape means.
-              https://www.tensorflow.org/api_docs/python/array_ops/shapes_and_shaping#reshape.
+            - You can use tf.reshape to concatenate the vectors.
 
         Returns:
-            embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
+            embeddings: tf.Tensor of shape
+                        (None, max_length, n_features*embed_size)
         """
         # TODO(akshayka): Do not train embeddings, at least not for the first N
         # iterations
@@ -186,7 +193,7 @@ class RNNModel():
             self.config.n_features * self.config.embed_size])
         return embeddings
 
-    def add_prediction_op(self):
+    def add_hidden_op(self, scope):
         """Adds the unrolled RNN:
             h_0 = 0
             for t in 1 to T:
@@ -199,37 +206,31 @@ class RNNModel():
             - Define the vector h as a constant and inititalize it with
               zeros. See tf.zeros and tf.shape for information on how
               to initialize this variable to be of the right shape.
-              https://www.tensorflow.org/api_docs/python/constant_op/constant_value_tensors#zeros
-              https://www.tensorflow.org/api_docs/python/array_ops/shapes_and_shaping#shape
             - In a for loop, begin to unroll the RNN sequence. Collect
               the predictions in a list.
             - When unrolling the loop, from the second iteration
               onwards, you will HAVE to call
               tf.get_variable_scope().reuse_variables() so that you do
               not create new variables in the RNN cell.
-              See https://www.tensorflow.org/versions/master/how_tos/variable_scope/
             - Concatenate and reshape the predictions into a predictions
               tensor.
         Hint: You will find the function tf.pack (similar to np.asarray)
               useful to assemble a list of tensors into a larger tensor.
-              https://www.tensorflow.org/api_docs/python/array_ops/slicing_and_joining#pack
         Hint: You will find the function tf.transpose and the perms
               argument useful to shuffle the indices of the tensor.
-              https://www.tensorflow.org/api_docs/python/array_ops/slicing_and_joining#transpose
 
         Remember:
             * Use the xavier initilization for matrices.
-            * Note that tf.nn.dropout takes the keep probability (1 - p_drop) as an argument.
-            The keep probability should be set to the value of self.dropout_placeholder
+            * Note that tf.nn.dropout takes the keep probability
+              (1 - p_drop) as an argument. The keep probability should be set
+              to the value of self.dropout_placeholder
 
         Returns:
-            pred: tf.Tensor of shape (batch_size, max_length, n_classes)
+            hidden: tf.Tensor of shape (batch_size, self.config.hidden_size)
         """
 
         x = self.add_embedding()
         dropout_rate = self.dropout_placeholder
-
-        preds = [] # Predicted output at each timestep should go here!
 
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
@@ -238,56 +239,81 @@ class RNNModel():
             cell = RNNCell(self.config.n_features * self.config.embed_size,
                 self.config.hidden_size)
         elif self.config.cell == "gru":
-            cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
+            cell = GRUCell(self.config.n_features * self.config.embed_size,
+                self.config.hidden_size)
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
         # Initialize state as vector of zeros.
         xav = tf.contrib.layers.xavier_initializer
-        U = tf.get_variable("U", (self.config.hidden_size,
-            self.config.n_classes), initializer=xav())
-        b2 = tf.get_variable("b2", (self.config.n_classes),
-            initializer=tf.constant_initializer(0))
-        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
+        with tf.variable_scope(scope):
+            b2 = tf.get_variable("b2", (self.config.n_classes),
+                initializer=tf.constant_initializer(0))
+            h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
 
-        with tf.variable_scope("RNN"):
+        with tf.variable_scope('RNN_ ' + scope):
+            # Upon completion of this loop,
+            # h will contain the final hidden representation of the text
             for time_step in range(self.max_length):
                 if time_step > 0:
                     tf.get_variable_scope().reuse_variables()
                 x_t = x[:,time_step,:]
-                o_t, h = cell(x_t, h)
-                o_drop_t = tf.nn.dropout(o_t, self.dropout_placeholder)
-                y_t = tf.matmul(o_drop_t, U) + b2
-                preds.append(y_t)
+                o_t, h = cell(inputs=x_t, state=h, scope=scope)
+        return h
 
-        # Make sure to reshape @preds here.
-        preds = tf.pack(preds, 1)
-        preds = tf.reshape(preds, [-1, self.max_length, self.config.n_classes])
+    
+    def add_transform_op(self, hidden, scope):
+        """Adds Ops for the hidden state transformation to the graph.
 
-        assert (preds.get_shape().as_list() ==
-            [None, self.max_length, self.config.n_classes],
-            "predictions are not of the right shape. "
-            "Expected {}, got {}".format(
-                [None, self.max_length, self.config.n_classes],
-                preds.get_shape().as_list()))
+        Args:
+            hidden: A tensor of shape (batch_size, self.config.hidden_size)
+                    containing the final hidden state of the RNN.
+            scope: The variable scope to use. (For example,
+                   'headline' or 'body'.)
+        Returns:
+            transformed_hidden: A tensor of shape
+            (batch_size, self.config.transform_size)
+        """
+        with tf.variable_scope(scope):
+            U = tf.get_variable("U", (self.config.hidden_size,
+                self.config.transform_size), initializer=xav())
+            transformed_hidden = tf.matmul(hidden, U)
+        return transformed_hidden
+
+
+    def add_prediction_op(self, headline_transformed, body_transformed):
+        """Adds Ops for prediction (excluding the softmax) to the graph.
+
+        Args:
+            headline_transformed: tensor of shape
+                (self.config.batch_size, self.config.transform_size)
+            headline_transformed: tensor of shape
+                (self.config.batch_size, self.config.transform_size)
+
+        Returns:
+            preds : tensor of shape
+                (self.config.batch_size, self.config.n_classes)
+        """
+        pred_input = tf.concat([headline_transformed, body_transformed], axis=0)
+        with tf.variable_scope("prediction_op"):
+           W = tf.get_variable("W", (self.config.transform_size,
+            self.config.n_classes))
+           preds = tf.matmul(pred_input, W)
         return preds
 
 
     def add_loss_op(self, preds):
         """Adds Ops for the loss function to the computational graph.
 
-        TODO: Compute averaged cross entropy loss for the predictions.
+        Compute averaged cross entropy loss for the predictions.
 
-        Hint: You can use tf.nn.sparse_softmax_cross_entropy_with_logits to simplify your
-                    implementation. You might find tf.reduce_mean useful.
         Args:
-            pred: A tensor of shape (batch_size, max_length, n_classes) containing the output of the neural
-                  network before the softmax layer.
+            preds: A tensor of shape (batch_size, n_classes) containing the
+                output of the neural network before the softmax layer.
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        # TODO(akshayka): Experiment with different loss functions
         loss = tf.nn.sparse_softmax_cross_entropy_with_logits(preds,
             self.labels_placeholder)
         loss = tf.reduce_mean(loss)
@@ -355,6 +381,9 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
         [w for headline in stances[0] for w in headline])
     word_indices = util.process_corpus(corpus)
     embeddings = util.load_embeddings(word_indices, dimension, embedding_path)
+    # headline --> rnn --> hidden_output --> transform --> transformed_hidden
+    # body --> rnn --> hidden_output --> transform --> transformed_hidden
+    # (headline_transformed, body_transformed) --> classifier --> batch pred
 
 
 def do_evaluate():

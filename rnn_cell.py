@@ -31,7 +31,7 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
     def output_size(self):
         return self._state_size
 
-    def __call__(self, inputs, state, scope=None):
+    def __call__(self, inputs, state, scope):
         """Updates the state using the previous @state and @inputs.
         Remember the RNN equations are:
 
@@ -53,8 +53,6 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
         Returns:
             a pair of the output vector and the new state vector.
         """
-        scope = scope or type(self).__name__
-
         # It's always a good idea to scope variables in functions lest they
         # be defined elsewhere!
         with tf.variable_scope(scope):
