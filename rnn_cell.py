@@ -14,6 +14,7 @@ import sys
 import tensorflow as tf
 import numpy as np
 
+
 class RNNCell(tf.nn.rnn_cell.RNNCell):
     """Wrapper around our RNN cell implementation that allows us to play
     nicely with TensorFlow.
@@ -66,9 +67,13 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
                 initializer=tf.contrib.layers.xavier_initializer())
             b = tf.get_variable("b", [H],
                 initializer=tf.constant_initializer(0.0))
-            sig_in = tf.matmul(inputs, W_x) + tf.matmul(state, W_h) + b
-            new_state = tf.nn.sigmoid(sig_in)
-            ### END YOUR CODE ###
+            theta = tf.matmul(inputs, W_x) + tf.matmul(state, W_h) + b
+            # Upon hitting padding, propagate the old state forward
+            # indicator_i = 1[x[i] != 0], x[i] the ith row of inputs
+            indicator = tf.minimum(
+                tf.ceil(tf.reduce_sum(tf.abs(inputs), axis=1)), 1)
+            new_state = (tf.nn.sigmoid(theta) * indicator +
+                state * (1 - indicator))
         # For an RNN , the output and state are the same (N.B. this
         # isn't true for an LSTM, though we aren't using one of those in
         # our assignment)

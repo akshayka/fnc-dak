@@ -17,9 +17,84 @@ import tensorflow as tf
 import numpy as np
 import copy
 import pdb
-from util import load_and_preprocess_fnc_data
-from gensim.models import word2vec
+import util
 from rnn_cell import RNNCell
+
+
+class Config:
+    """Holds model hyperparams and data information.
+
+    The config class is used to store various hyperparameters and dataset
+    information parameters. Model objects are passed a Config() object at
+    instantiation.
+    """
+    def __init__(self, n_features=1, n_classes=4, dropout=0.5,
+        embed_size=300, hidden_size=300,
+        batch_size=52, n_epochs=10, lr=0.001, output_path=None):
+        self.n_features = n_features
+        self.n_classes = n_classes
+        self.dropout = dropout
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+        self.batch_size = batch_size
+        self.n_epochs = n_epochs
+        self.lr = lr
+        if output_path:
+            # Where to save things.
+            self.output_path = output_path
+        else:
+            self.output_path = "results/window/{:%Y%m%d_%H%M%S}/".format(datetime.now())
+        self.model_output = self.output_path + "model.weights"
+        self.eval_output = self.output_path + "results.txt"
+        self.log_output = self.output_path + "log"
+
+
+def pad_sequences(data, n_features, max_length):
+    """Ensures each input-output seqeunce pair in @data is of length
+    @max_length by padding it with zeros and truncating the rest of the
+    sequence.
+
+    TODO: In the code below, for every sentence, labels pair in @data,
+    (a) create a new sentence which appends zero feature vectors until
+    the sentence is of length @max_length. If the sentence is longer
+    than @max_length, simply truncate the sentence to be @max_length
+    long.
+    (b) create a new label sequence similarly.
+    token in the original sequence, and a False for every padded input.
+
+    Example: for the (sentence, labels) pair: [[4,1], [6,0], [7,0]], [1,
+    0, 0], and max_length = 5, we would construct
+        - a new sentence: [[4,1], [6,0], [7,0], [0,0], [0,0]]
+        - a new label seqeunce: [1, 0, 0, 4, 4], and
+
+    Args:
+        data: is a list of (sentence, labels) tuples. @sentence is a list
+            containing the words in the sentence and @label is a list of
+            output labels. Each word is itself a list of
+            @n_features features. For example, the sentence "Chris
+            Manning is amazing" and labels "PER PER O O" would become
+            ([[1,9], [2,9], [3,8], [4,8]], [1, 1, 4, 4]). Here "Chris"
+            the word has been featurized as "[1, 9]", and "[1, 1, 4, 4]"
+            is the list of labels. 
+        max_length: the desired length for all input/output sequences.
+    Returns:
+        a new list of data points of the structure (sentence', labels', mask).
+        Each of sentence', labels' and mask are of length @max_length.
+        See the example above for more details.
+    """
+    ret = []
+
+    # Use this zero vector when padding sequences.
+    zero_vector = [0] * n_features
+
+    for sentence in data:
+        # TODO(akshayka): adapt this for our code
+        s = copy.deepcopy(sentence)
+        # pad_len = max_length - len(s)
+        s = (s + [zero_vector for i in range(max_length - len(s))])[0:max_length]
+        ret.append(s)
+    return ret
+
 
 class RNNModel():
     """
@@ -36,30 +111,22 @@ class RNNModel():
 
         Adds following nodes to the computational graph
 
-        input_placeholder: Input placeholder tensor of  shape (None, self.max_length, n_features), type tf.int32
+        inputs_placeholder: Input placeholder tensor of  shape (None, self.max_length, n_features), type tf.int32
         labels_placeholder: Labels placeholder tensor of shape (None, self.max_length), type tf.int32
-        mask_placeholder:  Mask placeholder tensor of shape (None, self.max_length), type tf.bool
         dropout_placeholder: Dropout value placeholder (scalar), type tf.float32
 
-        TODO: Add these placeholders to self as the instance variables
-            self.input_placeholder
+            self.inputs_placeholder
             self.labels_placeholder
-            self.mask_placeholder
             self.dropout_placeholder
-
-        HINTS:
-            - Remember to use self.max_length NOT Config.max_length
-
-        (Don't change the variable names)
         """
-        ### YOUR CODE HERE (~4-6 lines)
-        self.input_placeholder = tf.placeholder(tf.int32, shape=(None, self.max_length, self.config.n_features))
-        self.labels_placeholder = tf.placeholder(tf.int32, shape=(None, self.max_length))
-        self.mask_placeholder = tf.placeholder(tf.bool, shape=(None, self.max_length))
+        self.inputs_placeholder = tf.placeholder(tf.int32,
+            shape=(None, self.max_length, self.config.n_features))
+        self.labels_placeholder = tf.placeholder(tf.int32,
+            shape=(None, self.max_length))
         self.dropout_placeholder = tf.placeholder(tf.float32, shape=())
-        ### END YOUR CODE
 
-    def create_feed_dict(self, inputs_batch, mask_batch, labels_batch=None, dropout=1):
+
+    def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=1):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -75,24 +142,20 @@ class RNNModel():
 
         Args:
             inputs_batch: A batch of input data.
-            mask_batch:   A batch of mask data.
             labels_batch: A batch of label data.
             dropout: The dropout rate.
         Returns:
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
-        ### YOUR CODE (~6-10 lines)
         feed_dict = {}
         if inputs_batch is not None:
-            feed_dict[self.input_placeholder] = inputs_batch
-        if mask_batch is not None:
-            feed_dict[self.mask_placeholder] = mask_batch
+            feed_dict[self.inputs_placeholder] = inputs_batch
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
         if dropout is not None:
             feed_dict[self.dropout_placeholder] = dropout
-        ### END YOUR CODE
         return feed_dict
+
 
     def add_embedding(self):
         """Adds an embedding layer that maps from input tokens (integers) to vectors and then
@@ -100,7 +163,7 @@ class RNNModel():
 
         TODO:
             - Create an embedding tensor and initialize it with self.pretrained_embeddings.
-            - Use the input_placeholder to index into the embeddings tensor, resulting in a
+            - Use the inputs_placeholder to index into the embeddings tensor, resulting in a
               tensor of shape (None, max_length, n_features, embed_size).
             - Concatenates the embeddings by reshaping the embeddings tensor to shape
               (None, max_length, n_features * embed_size).
@@ -114,11 +177,13 @@ class RNNModel():
         Returns:
             embeddings: tf.Tensor of shape (None, max_length, n_features*embed_size)
         """
-        ### YOUR CODE HERE (~4-6 lines)
-        embedding1 = tf.Variable(self.pretrained_embeddings)
-        embedding2 = tf.nn.embedding_lookup(embedding1, self.input_placeholder)
-        embeddings = tf.reshape(embedding2, [-1, self.max_length, self.config.n_features * self.config.embed_size])
-        ### END YOUR CODE
+        # TODO(akshayka): Do not train embeddings, at least not for the first N
+        # iterations
+        embeddings = tf.Variable(self.pretrained_embeddings)
+        input_embeddings = tf.nn.embedding_lookup(embeddings,
+            self.inputs_placeholder)
+        embeddings = tf.reshape(input_embeddings, [-1, self.max_length,
+            self.config.n_features * self.config.embed_size])
         return embeddings
 
     def add_prediction_op(self):
@@ -170,50 +235,50 @@ class RNNModel():
         # RNNCell you defined, but for Q3, we will run this code again
         # with a GRU cell!
         if self.config.cell == "rnn":
-            cell = RNNCell(Config.n_features * Config.embed_size, Config.hidden_size)
+            cell = RNNCell(self.config.n_features * self.config.embed_size,
+                self.config.hidden_size)
         elif self.config.cell == "gru":
-            cell = GRUCell(Config.n_features * Config.embed_size, Config.hidden_size)
+            cell = GRUCell(self.config.n_features * self.config.embed_size, self.config.hidden_size)
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         # Define U and b2 as variables.
         # Initialize state as vector of zeros.
-        ### YOUR CODE HERE (~4-6 lines)
         xav = tf.contrib.layers.xavier_initializer
-        U = tf.get_variable("U", (self.config.hidden_size, self.config.n_classes), initializer=xav())
-        b2 = tf.get_variable("b2", (self.config.n_classes), initializer=tf.constant_initializer(0))
+        U = tf.get_variable("U", (self.config.hidden_size,
+            self.config.n_classes), initializer=xav())
+        b2 = tf.get_variable("b2", (self.config.n_classes),
+            initializer=tf.constant_initializer(0))
         h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
-        ### END YOUR CODE
 
         with tf.variable_scope("RNN"):
             for time_step in range(self.max_length):
-                ### YOUR CODE HERE (~6-10 lines)
                 if time_step > 0:
                     tf.get_variable_scope().reuse_variables()
                 x_t = x[:,time_step,:]
-                o_t, h= cell(x_t, h)
+                o_t, h = cell(x_t, h)
                 o_drop_t = tf.nn.dropout(o_t, self.dropout_placeholder)
                 y_t = tf.matmul(o_drop_t, U) + b2
                 preds.append(y_t)
-                ### END YOUR CODE
 
         # Make sure to reshape @preds here.
-        ### YOUR CODE HERE (~2-4 lines)
-        # pdb.set_trace()
         preds = tf.pack(preds, 1)
         preds = tf.reshape(preds, [-1, self.max_length, self.config.n_classes])
-        ### END YOUR CODE
 
-        assert preds.get_shape().as_list() == [None, self.max_length, self.config.n_classes], "predictions are not of the right shape. Expected {}, got {}".format([None, self.max_length, self.config.n_classes], preds.get_shape().as_list())
+        assert (preds.get_shape().as_list() ==
+            [None, self.max_length, self.config.n_classes],
+            "predictions are not of the right shape. "
+            "Expected {}, got {}".format(
+                [None, self.max_length, self.config.n_classes],
+                preds.get_shape().as_list()))
         return preds
+
 
     def add_loss_op(self, preds):
         """Adds Ops for the loss function to the computational graph.
 
         TODO: Compute averaged cross entropy loss for the predictions.
-        Importantly, you must ignore the loss for any masked tokens.
 
-        Hint: You might find tf.boolean_mask useful to mask the losses on masked tokens.
         Hint: You can use tf.nn.sparse_softmax_cross_entropy_with_logits to simplify your
                     implementation. You might find tf.reduce_mean useful.
         Args:
@@ -222,12 +287,12 @@ class RNNModel():
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        ### YOUR CODE HERE (~2-4 lines)
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(preds, self.labels_placeholder)
-        loss = tf.boolean_mask(loss, self.mask_placeholder)
+        # TODO(akshayka): Experiment with different loss functions
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(preds,
+            self.labels_placeholder)
         loss = tf.reduce_mean(loss)
-        ### END YOUR CODE
         return loss
+
 
     def add_training_op(self, loss):
         """Sets up the training Ops.
@@ -248,80 +313,73 @@ class RNNModel():
         Returns:
             train_op: The Op for training.
         """
-        ### YOUR CODE HERE (~1-2 lines)
+        # TODO(akshayka): Experiment with different optimizers
         train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)        
-        ### END YOUR CODE
         return train_op
 
-    def preprocess_sequence_data(self, examples):
-        def featurize_windows(data, start, end, window_size = 1):
-            """Uses the input sequences in @data to construct new windowed data points.
-            """
-            ret = []
-            for sentence, labels in data:
-                from util import window_iterator
-                sentence_ = []
-                for window in window_iterator(sentence, window_size, beg=start, end=end):
-                    sentence_.append(sum(window, []))
-                ret.append((sentence_, labels))
-            return ret
 
-        examples = featurize_windows(examples, self.helper.START, self.helper.END)
-        return pad_sequences(examples, self.max_length)
-
-    def consolidate_predictions(self, examples_raw, examples, preds):
-        """Batch the predictions into groups of sentence length.
-        """
-        assert len(examples_raw) == len(examples)
-        assert len(examples_raw) == len(preds)
-
-        ret = []
-        for i, (sentence, labels) in enumerate(examples_raw):
-            _, _, mask = examples[i]
-            labels_ = [l for l, m in zip(preds[i], mask) if m] # only select elements of mask.
-            assert len(labels_) == len(labels)
-            ret.append([sentence, labels, labels_])
-        return ret
-
-    def predict_on_batch(self, sess, inputs_batch, mask_batch):
-        feed = self.create_feed_dict(inputs_batch=inputs_batch, mask_batch=mask_batch)
+    def predict_on_batch(self, sess, inputs_batch):
+        feed = self.create_feed_dict(inputs_batch=inputs_batch)
+        # TODO(akshayka): populate self.pred / write output function
+        # that calls this one
         predictions = sess.run(tf.argmax(self.pred, axis=2), feed_dict=feed)
         return predictions
 
-    def train_on_batch(self, sess, inputs_batch, labels_batch, mask_batch):
-        feed = self.create_feed_dict(inputs_batch, labels_batch=labels_batch, mask_batch=mask_batch,
-                                     dropout=Config.dropout)
+
+    def train_on_batch(self, sess, inputs_batch, labels_batch):
+        feed = self.create_feed_dict(inputs_batch, labels_batch=labels_batch,
+                                     dropout=self.config.dropout)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
+
     def __init__(self, helper, config, pretrained_embeddings, report=None):
         super(RNNModel, self).__init__(helper, config, report)
-        self.max_length = min(Config.max_length, helper.max_length)
-        Config.max_length = self.max_length # Just in case people make a mistake.
+        self.max_length = # TODO(akshayka) compute max_length
         self.pretrained_embeddings = pretrained_embeddings
 
         # Defining placeholders.
-        self.input_placeholder = None
+        self.inputs_placeholder = None
         self.labels_placeholder = None
-        self.mask_placeholder = None
         self.dropout_placeholder = None
 
+        # TODO: pipeline to populate inputs / labels
         self.build()
 
-def do_train(args):
+
+def do_train(train_bodies, train_stances, dimension, embedding_path):
     # Set up some parameters.
-    bodies, stances = load_and_preprocess_fnc_data(args)
-    gensim
+    bodies, stances = util.load_and_preprocess_fnc_data(train_bodies,
+        train_stances)
+    corpus = ([w for bod in bodies.values() for w in bod] +
+        [w for headline in stances[0] for w in headline])
+    word_indices = util.process_corpus(corpus)
+    embeddings = util.load_embeddings(word_indices, dimension, embedding_path)
+
+
+def do_evaluate():
+    # TODO(akshayka): Implement evaluation function, lean on assignment 3
+    pass
+    
+
+# TODO(akshayka): Plotting code (loss / gradient size ... ) /
+# evaluation of results / etc etc
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Trains and tests RNN model')
     subparsers = parser.add_subparsers()
 
     command_parser = subparsers.add_parser('train', help='')
-    command_parser.add_argument('-dtb', '--train-bodies', type=argparse.FileType('r'), default="fnc-1-data/train_bodies.csv", help="Training data")
-    command_parser.add_argument('-dts', '--train-stances', type=argparse.FileType('r'), default="fnc-1-data/train_stances.csv", help="Training data")
-    # command_parser.add_argument('-v', '--vocab', type=argparse.FileType('r'), default="supp_data/vocab.txt", help="Path to vocabulary file")
-    # command_parser.add_argument('-vv', '--vectors', type=argparse.FileType('r'), default="supp_data/wordVectors.txt", help="Path to word vectors file")
+    command_parser.add_argument('-tb', '--train-bodies',
+        type=argparse.FileType('r'), default="fnc-1-data/train_bodies.csv",
+        help="Training data")
+    command_parser.add_argument('-ts',
+        '--train-stances', type=argparse.FileType('r'),
+        default="fnc-1-data/train_stances.csv", help="Training data")
+    command_parser.add_argument('-e', '--embedding_path', type=str,
+        default="glove/glove.6B.300d.txt", help="Path to word vectors file")
+    command_parser.add_argument('-d', '--dimension', type=int,
+        default=300, help="Dimension of pretrained word vectors")
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
@@ -329,4 +387,5 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     else:
-        ARGS.func(ARGS)
+        ARGS.func(args.train_bodies, args.train_stances, args.dimension,
+            args.embedding_path)
