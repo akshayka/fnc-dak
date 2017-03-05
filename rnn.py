@@ -89,7 +89,7 @@ class RNNModel(Model):
         self.bodies_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_body_len, self.config.n_features))
         self.labels_placeholder = tf.placeholder(tf.int32,
-            shape=(None, 1))
+            shape=(None))
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, labels_batch=None):
@@ -270,11 +270,11 @@ class RNNModel(Model):
         
         body_hidden = self.add_hidden_op(input_type='bodies', scope=self.body_scope)
         body_transformed = self.add_transform_op(body_hidden, scope=self.body_scope)
-        pred_input = tf.concat([headline_transformed, body_transformed], axis=0)
+        pred_input = tf.concat(0, [headline_transformed, body_transformed])
 
         with tf.variable_scope("prediction_op"):
            W = tf.get_variable("W", (self.config.transform_size,
-            self.config.n_classes))
+            self.config.n_classes), dtype=tf.float64)
            preds = tf.matmul(pred_input, W)
         return preds
 
