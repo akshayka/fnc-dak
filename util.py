@@ -13,12 +13,13 @@ FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
     "max_headline_len", "max_body_len"])
 TOKEN_RE = r"\w+[']?[\w+]?"
 
+LBLS = ["unrelated", "discuss", "disagree", "agree"]
+
 UNRELATED = 0
 DISCUSS = 1
 DISAGREE = 2
 AGREE = 3
 
-LBLS = [UNRELATED, DISCUSS, DISAGREE, AGREE]
 RELATED = [DISCUSS, DISAGREE, AGREE]
 
 
@@ -53,6 +54,13 @@ class ConfusionMatrix(object):
     """
 
     def __init__(self, labels, default_label=None):
+        """
+        Attributes:
+            labels : list of str
+                List of all possible labels. labels[i] must correspond to
+                numeric prediction i.
+            default_label : int
+        """
         self.labels = labels
         self.default_label = default_label if default_label is not None else len(labels) -1
         self.counts = defaultdict(Counter)

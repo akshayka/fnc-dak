@@ -1,7 +1,7 @@
 import logging
 
 import tensorflow as tf
-from util import ConfusionMatrix, Progbar, minibatches, LBLS, RELATED
+from util import ConfusionMatrix, Progbar, minibatches, LBLS, RELATED, UNRELATED
 
 logger = logging.getLogger("baseline")
 logger.setLevel(logging.DEBUG)
@@ -148,7 +148,7 @@ class Model(object):
         """
         # TODO(akshayka): Implement a report that tells us the inputs
         # on which we guessed incorrectly
-        token_cm = ConfusionMatrix(labels=LBLS)
+        token_cm = ConfusionMatrix(labels=LBLS, default_label=UNRELATED)
 
         correct_guessed_related, total_gold_related, total_guessed_related = (
             0., 0., 0.)
