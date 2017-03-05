@@ -79,9 +79,9 @@ class ConfusionMatrix(object):
         """Summarize counts"""
         keys = range(len(self.labels))
         data = []
-        macro = array([0., 0., 0., 0.])
-        micro = array([0., 0., 0., 0.])
-        default = array([0., 0., 0., 0.])
+        macro = np.array([0., 0., 0., 0.])
+        micro = np.array([0., 0., 0., 0.])
+        default = np.array([0., 0., 0., 0.])
         for l in keys:
             tp = self.counts[l][l]
             fp = sum(self.counts[l_][l] for l_ in keys if l_ != l)
@@ -94,10 +94,10 @@ class ConfusionMatrix(object):
             f1 = 2 * prec * rec / (prec + rec) if tp > 0  else 0
 
             # update micro/macro averages
-            micro += array([tp, fp, tn, fn])
-            macro += array([acc, prec, rec, f1])
+            micro += np.array([tp, fp, tn, fn])
+            macro += np.array([acc, prec, rec, f1])
             if l != self.default_label: # Count count for everything that is not the default label!
-                default += array([tp, fp, tn, fn])
+                default += np.array([tp, fp, tn, fn])
 
             data.append([acc, prec, rec, f1])
 

@@ -35,6 +35,7 @@ class Config:
     information parameters. Model objects are passed a Config() object at
     instantiation.
     """
+    # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, cell="rnn",
         embed_size=50, hidden_size=50, transform_size=30,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
