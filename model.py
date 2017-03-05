@@ -1,3 +1,12 @@
+import logging
+
+import tensorflow as tf
+from util import ConfusionMatrix, Progbar, minibatches, LBLS, RELATED
+
+logger = logging.getLogger("baseline")
+logger.setLevel(logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 class Model(object):
     """Abstracts a Tensorflow graph for a learning task.
 
@@ -76,7 +85,7 @@ class Model(object):
 
         raise NotImplementedError("Each Model must re-implement this method.")
 
-    def train_on_batch(self, sess, inputs_batch, labels_batch):
+    def train_on_batch(self, sess, headlines_batch, bodies_batch, labels_batch):
         """Perform one step of gradient descent on the provided batch of data.
 
         Args:
@@ -86,11 +95,13 @@ class Model(object):
         Returns:
             loss: loss over the batch (a scalar)
         """
-        feed = self.create_feed_dict(inputs_batch, labels_batch=labels_batch)
+        feed = self.create_feed_dict(headlines_batch, bodies_batch,
+            labels_batch=labels_batch)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
-    def predict_on_batch(self, sess, inputs_batch):
+
+    def predict_on_batch(self, sess, headlines_batch, bodies_batch):
         """Make predictions for the provided batch of data
 
         Args:
@@ -99,9 +110,111 @@ class Model(object):
         Returns:
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
-        feed = self.create_feed_dict(inputs_batch)
+        feed = self.create_feed_dict(headlines_batch, bodies_batch)
         predictions = sess.run(self.pred, feed_dict=feed)
         return predictions
+
+
+    def output(self, sess, inputs):
+        """
+        Reports the output of the model on examples.
+        """
+
+        preds = []
+        headlines, bodies, stances = inputs
+        data = [headlines, bodies]
+        prog = Progbar(target=1 + int(len(stances) / self.config.batch_size))
+        # TODO(akshayka): Verify that data is in the correct structure
+        for i, batch in enumerate(minibatches(data, self.config.batch_size,
+            shuffle=False)):
+            preds_ = self.predict_on_batch(sess, *batch)
+            preds += list(preds_)
+            prog.update(i + 1, [])
+        return ((headlines, bodies), stances, preds)
+
+
+    def evaluate(self, sess, examples):
+        """Evaluates model performance on @examples.
+
+        This function uses the model to predict labels for @examples and
+        constructs a confusion matrix.
+
+        Args:
+            sess: the current TensorFlow session.
+            examples: A list of vectorized input/output pairs.
+        Returns:
+            The F1 score for predicting the relationship between
+            headline-body pairs
+        """
+        # TODO(akshayka): Implement a report that tells us the inputs
+        # on which we guessed incorrectly
+        token_cm = ConfusionMatrix(labels=LBLS)
+
+        correct_guessed_related, total_gold_related, total_guessed_related = (
+            0., 0., 0.)
+        for _, labels, labels_  in self.output(sess, examples):
+            for l, l_ in zip(labels, labels_):
+                token_cm.update(l, l_)
+                if l == l_ and l in RELATED:
+                    correct_guessed_related += 1
+                if l in RELATED:
+                    total_gold_related += 1
+                if l_ in RELATED:
+                    total_guessed_related += 1
+
+        p = correct_guessed_related / total_guessed_related if \
+            total_guessed_related > 0 else 0
+        r = correct_guessed_related / total_gold_related if \
+            total_gold_related > 0 else 0
+
+        if total_guessed_related == 0:
+            logging.warn("total_guessed_related == 0!")
+        if total_gold_related == 0:
+            logging.warn("total_gold_related == 0!")
+        f1 = 2 * p * r / (p + r) if p + r > 0 else 0
+        return token_cm, (p, r, f1)
+
+
+    def run_epoch(self, sess, train_examples, dev_examples):
+        prog = Progbar(target=1 + int(len(train_examples) /
+            self.config.batch_size))
+        for i, batch in enumerate(minibatches(train_examples,
+            self.config.batch_size)):
+            loss = self.train_on_batch(sess, *batch)
+            prog.update(i + 1, [("train loss", loss)])
+        print("")
+
+        #logger.info("Evaluating on training data")
+        #token_cm, entity_scores = self.evaluate(sess, train_examples, train_examples_raw)
+        #logger.debug("Token-level confusion matrix:\n" + token_cm.as_table())
+        #logger.debug("Token-level scores:\n" + token_cm.summary())
+        #logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
+
+        logger.info("Evaluating on development data")
+        token_cm, entity_scores = self.evaluate(sess, dev_examples)
+        logger.debug("Token-level confusion matrix:\n" + token_cm.as_table())
+        logger.debug("Token-level scores:\n" + token_cm.summary())
+        logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
+
+        f1 = entity_scores[-1]
+        return f1
+        
+
+
+    def fit(self, sess, saver, train_examples, dev_examples):
+        best_score = 0.
+
+        for epoch in range(self.config.n_epochs):
+            logger.info("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
+            score = self.run_epoch(sess, train_examples, dev_examples)
+            if score > best_score:
+                best_score = score
+                if saver:
+                    logger.info("New best score! Saving model in %s", self.config.model_output)
+                    saver.save(sess, self.config.model_output)
+            print("")
+        return best_score
+    
 
     def build(self):
         self.add_placeholders()

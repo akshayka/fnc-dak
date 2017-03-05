@@ -53,10 +53,7 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
         Returns:
             a pair of the output vector and the new state vector.
         """
-        # It's always a good idea to scope variables in functions lest they
-        # be defined elsewhere!
         with tf.variable_scope(scope):
-            ### YOUR CODE HERE (~6-10 lines)
             H = self.state_size
             D = self.input_size
             W_h = tf.get_variable("W_h", [H, H],
@@ -72,8 +69,5 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
                 tf.ceil(tf.reduce_sum(tf.abs(inputs), axis=1)), 1)
             new_state = (tf.nn.sigmoid(theta) * indicator +
                 state * (1 - indicator))
-        # For an RNN , the output and state are the same (N.B. this
-        # isn't true for an LSTM, though we aren't using one of those in
-        # our assignment)
         output = new_state
         return output, new_state

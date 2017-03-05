@@ -18,6 +18,7 @@ import numpy as np
 import copy
 import pdb
 import util
+from model import Model
 from rnn_cell import RNNCell
 
 
@@ -29,7 +30,7 @@ class Config:
     instantiation.
     """
     def __init__(self, n_features=1, n_classes=4, dropout=0.5,
-        embed_size=300, hidden_size=300, transform_size,
+        embed_size=300, hidden_size=300, transform_size=200,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
@@ -49,53 +50,6 @@ class Config:
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
         self.log_output = self.output_path + "log"
-
-
-def pad_sequences(data, n_features, max_length):
-    """Ensures each input-output seqeunce pair in @data is of length
-    @max_length by padding it with zeros and truncating the rest of the
-    sequence.
-
-    TODO: In the code below, for every sentence, labels pair in @data,
-    (a) create a new sentence which appends zero feature vectors until
-    the sentence is of length @max_length. If the sentence is longer
-    than @max_length, simply truncate the sentence to be @max_length
-    long.
-    (b) create a new label sequence similarly.
-    token in the original sequence, and a False for every padded input.
-
-    Example: for the (sentence, labels) pair: [[4,1], [6,0], [7,0]], [1,
-    0, 0], and max_length = 5, we would construct
-        - a new sentence: [[4,1], [6,0], [7,0], [0,0], [0,0]]
-        - a new label seqeunce: [1, 0, 0, 4, 4], and
-
-    Args:
-        data: is a list of (sentence, labels) tuples. @sentence is a list
-            containing the words in the sentence and @label is a list of
-            output labels. Each word is itself a list of
-            @n_features features. For example, the sentence "Chris
-            Manning is amazing" and labels "PER PER O O" would become
-            ([[1,9], [2,9], [3,8], [4,8]], [1, 1, 4, 4]). Here "Chris"
-            the word has been featurized as "[1, 9]", and "[1, 1, 4, 4]"
-            is the list of labels. 
-        max_length: the desired length for all input/output sequences.
-    Returns:
-        a new list of data points of the structure (sentence', labels', mask).
-        Each of sentence', labels' and mask are of length @max_length.
-        See the example above for more details.
-    """
-    ret = []
-
-    # Use this zero vector when padding sequences.
-    zero_vector = [0] * n_features
-
-    for sentence in data:
-        # TODO(akshayka): adapt this for our code
-        s = copy.deepcopy(sentence)
-        # pad_len = max_length - len(s)
-        s = (s + [zero_vector for i in range(max_length - len(s))])[0:max_length]
-        ret.append(s)
-    return ret
 
 
 class RNNModel(Model):
@@ -125,14 +79,15 @@ class RNNModel(Model):
             self.labels_placeholder
             self.dropout_placeholder
         """
-        self.inputs_placeholder = tf.placeholder(tf.int32,
-            shape=(None, self.max_length, self.config.n_features))
+        self.headlines_placeholder = tf.placeholder(tf.int32,
+            shape=(None, self.max_headline_len, self.config.n_features))
+        self.bodies_placeholder = tf.placeholder(tf.int32,
+            shape=(None, self.max_body_len, self.config.n_features))
         self.labels_placeholder = tf.placeholder(tf.int32,
-            shape=(None, self.max_length))
-        self.dropout_placeholder = tf.placeholder(tf.float32, shape=())
+            shape=(None, 1))
 
 
-    def create_feed_dict(self, inputs_batch, labels_batch=None, dropout=1):
+    def create_feed_dict(self, headlines_batch, bodies_batch, labels_batch=None):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -154,20 +109,19 @@ class RNNModel(Model):
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
         feed_dict = {}
-        if inputs_batch is not None:
-            feed_dict[self.inputs_placeholder] = inputs_batch
+        if headlines_batch is not None:
+            feed_dict[self.headlines_placeholder] = headlines_batch
+        if bodies_batch is not None:
+            feed_dict[self.bodies_placeholder] = bodies_batch
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
-        if dropout is not None:
-            feed_dict[self.dropout_placeholder] = dropout
         return feed_dict
 
 
-    def add_embedding(self):
+    def add_embedding(self, input_type):
         """Adds an embedding layer that maps from input tokens (integers) to
         vectors and then concatenates those vectors:
 
-        TODO:
             - Create an embedding tensor and initialize it with
               self.pretrained_embeddings.
             - Use the inputs_placeholder to index into the embeddings tensor,
@@ -180,20 +134,31 @@ class RNNModel(Model):
             - You might find tf.nn.embedding_lookup useful.
             - You can use tf.reshape to concatenate the vectors.
 
+        Args:
+            input_type : str, one of 'headlines' or 'bodies'
         Returns:
             embeddings: tf.Tensor of shape
                         (None, max_length, n_features*embed_size)
         """
-        # TODO(akshayka): Do not train embeddings, at least not for the first N
-        # iterations
-        embeddings = tf.Variable(self.pretrained_embeddings)
-        input_embeddings = tf.nn.embedding_lookup(embeddings,
-            self.inputs_placeholder)
-        embeddings = tf.reshape(input_embeddings, [-1, self.max_length,
+        # TODO(akshayka): Train embeddings after N iterations
+        embeddings = tf.constant(self.pretrained_embeddings)
+        if input_type == "headlines":
+            input_embeddings = tf.nn.embedding_lookup(embeddings,
+                self.headlines_placeholder)
+            max_len = self.max_headline_len
+        elif input_type == "bodies":
+            input_embeddings = tf.nn.embedding_lookup(embeddings,
+                self.bodies_placeholder)
+            max_len = self.max_body_len
+        else:
+            raise ValueError("Invalid input_type %s" % input_type) 
+
+        embeddings = tf.reshape(input_embeddings, [-1, max_len,
             self.config.n_features * self.config.embed_size])
         return embeddings
 
-    def add_hidden_op(self, scope):
+
+    def add_hidden_op(self, input_type, scope):
         """Adds the unrolled RNN:
             h_0 = 0
             for t in 1 to T:
@@ -225,12 +190,15 @@ class RNNModel(Model):
               (1 - p_drop) as an argument. The keep probability should be set
               to the value of self.dropout_placeholder
 
+        Args:
+            input_type : str, one of 'headlines' or 'bodies'
+            scope : scope for variables
+
         Returns:
             hidden: tf.Tensor of shape (batch_size, self.config.hidden_size)
         """
 
-        x = self.add_embedding()
-        dropout_rate = self.dropout_placeholder
+        x = self.add_embedding(input_type)
 
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
@@ -244,14 +212,7 @@ class RNNModel(Model):
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
-        # Define U and b2 as variables.
-        # Initialize state as vector of zeros.
-        xav = tf.contrib.layers.xavier_initializer
-        with tf.variable_scope(scope):
-            b2 = tf.get_variable("b2", (self.config.n_classes),
-                initializer=tf.constant_initializer(0))
-            h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
-
+        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
         with tf.variable_scope('RNN_ ' + scope):
             # Upon completion of this loop,
             # h will contain the final hidden representation of the text
@@ -295,7 +256,15 @@ class RNNModel(Model):
             preds : tensor of shape
                 (self.config.batch_size, self.config.n_classes)
         """
+        headline_hidden = add_hidden_op(input_type='headlines',
+            scope=self.headline_scope)
+        headline_transformed = add_transform_op(headline_hidden,
+            scope=self.headline_scope)
+        
+        body_hidden = add_hidden_op(input_type='bodies', scope=self.body_scope)
+        body_transformed = add_transform_op(body_hidden, scope=self.body_scope)
         pred_input = tf.concat([headline_transformed, body_transformed], axis=0)
+
         with tf.variable_scope("prediction_op"):
            W = tf.get_variable("W", (self.config.transform_size,
             self.config.n_classes))
@@ -339,57 +308,90 @@ class RNNModel(Model):
         Returns:
             train_op: The Op for training.
         """
-        # TODO(akshayka): Experiment with different optimizers
         train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)        
         return train_op
 
 
-    def predict_on_batch(self, sess, inputs_batch):
-        feed = self.create_feed_dict(inputs_batch=inputs_batch)
-        # TODO(akshayka): populate self.pred / write output function
-        # that calls this one
-        predictions = sess.run(tf.argmax(self.pred, axis=2), feed_dict=feed)
-        return predictions
-
-
-    def train_on_batch(self, sess, inputs_batch, labels_batch):
-        feed = self.create_feed_dict(inputs_batch, labels_batch=labels_batch,
-                                     dropout=self.config.dropout)
-        _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
-        return loss
-
-
-    def __init__(self, helper, config, pretrained_embeddings, report=None):
-        super(RNNModel, self).__init__(helper, config, report)
-        self.max_length = # TODO(akshayka) compute max_length
+    def __init__(self, config, max_headline_len, max_body_len,
+        pretrained_embeddings):
+        # super(RNNModel, self).__init__(config, report)
+        self.config = config
+        self.max_headline_len = max_headline_len
+        self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
 
         # Defining placeholders.
-        self.inputs_placeholder = None
+        self.headlines_placeholder = None
+        self.bodies_placeholder = None
         self.labels_placeholder = None
-        self.dropout_placeholder = None
 
-        # TODO: pipeline to populate inputs / labels
+        self.headline_scope = 'headlines'
+        self.body_scope = 'bodies' 
+
         self.build()
 
 
 def do_train(train_bodies, train_stances, dimension, embedding_path):
-    # Set up some parameters.
-    bodies, stances = util.load_and_preprocess_fnc_data(train_bodies,
-        train_stances)
-    corpus = ([w for bod in bodies.values() for w in bod] +
-        [w for headline in stances[0] for w in headline])
+    fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
+        train_bodies, train_stances)
+
+    # For convenience, create the word indices map over the entire dataset
+    corpus = ([w for bod in fnc_data.bodies for w in bod] +
+        [w for headline in fnc_data.headlines for w in headline])
     word_indices = util.process_corpus(corpus)
     embeddings = util.load_embeddings(word_indices, dimension, embedding_path)
-    # headline --> rnn --> hidden_output --> transform --> transformed_hidden
-    # body --> rnn --> hidden_output --> transform --> transformed_hidden
-    # (headline_transformed, body_transformed) --> classifier --> batch pred
 
+    # Vectorize and assemble the training data
+    headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
+        fnc_data_train.max_headline_len)
+    body_vectors = util.vectorize(fnc_data.bodies, word_indices,
+        fnc_data_train.max_body_len)
+    training_data = (headline_vectors, body_vectors, fnc_data_train.stances)
 
-def do_evaluate():
-    # TODO(akshayka): Implement evaluation function, lean on assignment 3
-    pass
-    
+    # Vectorize and assemble the dev data; note that we use the training
+    # maximum length
+    headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
+        fnc_data_train.max_headline_len)
+    body_vectors = util.vectorize(fnc_data.bodies, word_indices,
+        fnc_data_train.max_body_len)
+    dev_data = (headline_vectors, body_vectors, fnc_data_dev.stances)
+
+    config = Config()
+    handler = logging.FileHandler(config.log_output)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s: %(message)s'))
+    logging.getLogger().addHandler(handler)
+
+    with tf.Graph().as_default():
+        logger.info("Building model...",)
+        start = time.time()
+        model = RNNModel(config, fnc_data_train.max_headline_len,
+            fnc_data_train.max_body_len, embeddings)
+        logger.info("took %.2f seconds", time.time() - start)
+
+        init = tf.global_variables_initializer()
+        saver = tf.train.Saver()
+
+        with tf.Session() as session:
+            session.run(init)
+            model.fit(session, saver, train, dev)
+            # Save predictions in a text file.
+            output = model.output(session, dev)
+            headlines, bodies = output[0]
+            indices_to_words = {word_indices[w] : w for w in word_indices}
+            headlines = [' '.join(
+                util.word_indices_to_words(h, indices_to_words))
+                for h in headlines]
+            bodies = [' '.join(
+                util.word_indices_to_words(b, indices_to_words))
+                for b in bodies]
+            output = (headlines, bodies, output[1], output[2])
+
+            with open(model.config.eval_output, 'w') as f:
+                for headline, body, label, prediction in output:
+                    f.write("%s\t%s\tgold:%d\tpred:%d" % (
+                        headline, body, label, prediction))
+
 
 # TODO(akshayka): Plotting code (loss / gradient size ... ) /
 # evaluation of results / etc etc
@@ -416,5 +418,5 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     else:
-        ARGS.func(args.train_bodies, args.train_stances, args.dimension,
-            args.embedding_path)
+        ARGS.func(ARGS.train_bodies, ARGS.train_stances, ARGS.dimension,
+            ARGS.embedding_path)
