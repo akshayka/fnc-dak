@@ -9,6 +9,7 @@ from __future__ import division
 
 import argparse
 import logging
+import os
 import sys
 import time
 from datetime import datetime
@@ -22,6 +23,11 @@ from model import Model
 from rnn_cell import RNNCell
 
 
+logger = logging.getLogger("baseline_model")
+logger.setLevel(logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
+
 class Config:
     """Holds model hyperparams and data information.
 
@@ -29,12 +35,12 @@ class Config:
     information parameters. Model objects are passed a Config() object at
     instantiation.
     """
-    def __init__(self, n_features=1, n_classes=4, dropout=0.5,
+    def __init__(self, n_features=1, n_classes=4, cell="rnn",
         embed_size=300, hidden_size=300, transform_size=200,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
-        self.dropout = dropout
+        self.cell = cell
         self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.transform_size = transform_size
@@ -45,8 +51,9 @@ class Config:
             # Where to save things.
             self.output_path = output_path
         else:
-            self.output_path = "results/window/{:%Y%m%d_%H%M%S}/".format(
+            self.output_path = "results/{:%Y%m%d_%H%M%S}/".format(
                 datetime.now())
+            os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
         self.log_output = self.output_path + "log"
@@ -72,8 +79,6 @@ class RNNModel(Model):
             (None, self.max_length, n_features), type tf.int32
         labels_placeholder: Labels placeholder tensor of shape
             (None, self.max_length), type tf.int32
-        dropout_placeholder: Dropout value placeholder (scalar),
-            type tf.float32
 
             self.inputs_placeholder
             self.labels_placeholder
@@ -197,8 +202,9 @@ class RNNModel(Model):
         Returns:
             hidden: tf.Tensor of shape (batch_size, self.config.hidden_size)
         """
-
         x = self.add_embedding(input_type)
+        max_len = self.max_headline_len if input_type == "headlines" \
+            else self.max_body_len
 
         # Use the cell defined below. For Q2, we will just be using the
         # RNNCell you defined, but for Q3, we will run this code again
@@ -213,10 +219,10 @@ class RNNModel(Model):
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
         h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
-        with tf.variable_scope('RNN_ ' + scope):
+        with tf.variable_scope(self.config.cell + '_' + scope):
             # Upon completion of this loop,
             # h will contain the final hidden representation of the text
-            for time_step in range(self.max_length):
+            for time_step in range(max_len):
                 if time_step > 0:
                     tf.get_variable_scope().reuse_variables()
                 x_t = x[:,time_step,:]
@@ -243,7 +249,7 @@ class RNNModel(Model):
         return transformed_hidden
 
 
-    def add_prediction_op(self, headline_transformed, body_transformed):
+    def add_prediction_op(self):
         """Adds Ops for prediction (excluding the softmax) to the graph.
 
         Args:
@@ -256,13 +262,13 @@ class RNNModel(Model):
             preds : tensor of shape
                 (self.config.batch_size, self.config.n_classes)
         """
-        headline_hidden = add_hidden_op(input_type='headlines',
+        headline_hidden = self.add_hidden_op(input_type='headlines',
             scope=self.headline_scope)
-        headline_transformed = add_transform_op(headline_hidden,
+        headline_transformed = self.add_transform_op(headline_hidden,
             scope=self.headline_scope)
         
-        body_hidden = add_hidden_op(input_type='bodies', scope=self.body_scope)
-        body_transformed = add_transform_op(body_hidden, scope=self.body_scope)
+        body_hidden = self.add_hidden_op(input_type='bodies', scope=self.body_scope)
+        body_transformed = self.add_transform_op(body_hidden, scope=self.body_scope)
         pred_input = tf.concat([headline_transformed, body_transformed], axis=0)
 
         with tf.variable_scope("prediction_op"):
@@ -332,15 +338,19 @@ class RNNModel(Model):
 
 
 def do_train(train_bodies, train_stances, dimension, embedding_path):
+    logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
 
     # For convenience, create the word indices map over the entire dataset
+    logging.info("Building word-to-index map ...")
     corpus = ([w for bod in fnc_data.bodies for w in bod] +
         [w for headline in fnc_data.headlines for w in headline])
     word_indices = util.process_corpus(corpus)
+    logging.info("Building embedding matrix ...")
     embeddings = util.load_embeddings(word_indices, dimension, embedding_path)
 
+    logging.info("Vectorizing data ...")
     # Vectorize and assemble the training data
     headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
         fnc_data_train.max_headline_len)
@@ -359,7 +369,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
     config = Config()
     handler = logging.FileHandler(config.log_output)
     handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s: %(message)s'))
+    handler.setFormatter(logging.Formatter(
+       '%(asctime)s:%(levelname)s: %(message)s'))
     logging.getLogger().addHandler(handler)
 
     with tf.Graph().as_default():

@@ -272,7 +272,7 @@ def vectorize(examples, word_indices, max_len):
 
 def load_embeddings(word_indices, dimension=300,
     embedding_path="glove/glove.6B.300d.txt"):
-    embeddings = np.zeros([len(word_indices) + 1], dimension)
+    embeddings = np.zeros([len(word_indices) + 1, dimension])
     with open(embedding_path, 'rb') as fstream:
         for line in fstream:
             line = line.strip()
@@ -284,7 +284,7 @@ def load_embeddings(word_indices, dimension=300,
                 # TODO(delenn): account for unseen words (unk token?)
                 continue
             data = [float(x) for x in row[1:]]
-            if len(data) != dimensions:
+            if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
             embeddings[word_indices[word]] = np.asarray(data)
@@ -363,26 +363,26 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     train_indices = np.random.choice(np.arange(num_examples), 
         size=int(train_test_split * num_examples), replace=False)
 
-    train_headlines = fnc_data.headlines[train_indices]
+    train_headlines = [fnc_data.headlines[idx] for idx in train_indices]
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
 
-    train_bodies = fnc_data.bodies[train_indices]
+    train_bodies = [fnc_data.bodies[idx] for idx in train_indices]
     body_lens = [len(body) for body in train_bodies]
     max_body_len = max(body_lens)
 
     fnc_data_train = FNCData(
         headlines=train_headlines, bodies=train_bodies,
-        stances=fnc_data[train_indices],
+        stances=[fnc_data.stances[idx] for idx in train_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
     # Populate test data
     test_indices = [idx for idx in np.arange(num_examples) \
         if idx not in train_indices]
     fnc_data_test = FNCData(
-        headlines=fnc_data.headlines[test_indices],
-        bodies=fnc_data.bodies[test_indices],
-        stances=fnc_data.stances[test_indices],
+        headlines=[fnc_data.headlines[idx] for idx in test_indices],
+        bodies=[fnc_data.bodies[idx] for idx in test_indices],
+        stances=[fnc_data.stances[idx] for idx in test_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
     return fnc_data, fnc_data_train, fnc_data_test
