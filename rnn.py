@@ -317,7 +317,7 @@ class RNNModel(Model):
         Returns:
             train_op: The Op for training.
         """
-        train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)        
+        train_op = tf.train.AdamOptimizer(self.config.lr).minimize(loss)
         return train_op
 
 
