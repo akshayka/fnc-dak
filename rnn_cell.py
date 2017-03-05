@@ -67,6 +67,7 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
             # indicator_i = 1[x[i] != 0], x[i] the ith row of inputs
             indicator = tf.minimum(
                 tf.ceil(tf.reduce_sum(tf.abs(inputs), axis=1)), 1)
+            indicator = tf.expand_dims(indicator, axis=1)
             new_state = (tf.nn.sigmoid(theta) * indicator +
                 state * (1 - indicator))
         output = new_state

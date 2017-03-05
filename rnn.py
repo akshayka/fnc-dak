@@ -36,7 +36,7 @@ class Config:
     instantiation.
     """
     def __init__(self, n_features=1, n_classes=4, cell="rnn",
-        embed_size=300, hidden_size=300, transform_size=200,
+        embed_size=50, hidden_size=50, transform_size=30,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
@@ -77,8 +77,8 @@ class RNNModel(Model):
 
         inputs_placeholder: Input placeholder tensor of shape
             (None, self.max_length, n_features), type tf.int32
-        labels_placeholder: Labels placeholder tensor of shape
-            (None, self.max_length), type tf.int32
+        labels_placeholder: Labels placeholder tensor of shape (None)
+            type tf.int32
 
             self.inputs_placeholder
             self.labels_placeholder
@@ -89,7 +89,7 @@ class RNNModel(Model):
         self.bodies_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_body_len, self.config.n_features))
         self.labels_placeholder = tf.placeholder(tf.int32,
-            shape=(None, 1))
+            shape=(None))
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, labels_batch=None):
@@ -146,7 +146,7 @@ class RNNModel(Model):
                         (None, max_length, n_features*embed_size)
         """
         # TODO(akshayka): Train embeddings after N iterations
-        embeddings = tf.constant(self.pretrained_embeddings)
+        embeddings = tf.constant(self.pretrained_embeddings, dtype=tf.float32)
         if input_type == "headlines":
             input_embeddings = tf.nn.embedding_lookup(embeddings,
                 self.headlines_placeholder)
@@ -242,9 +242,10 @@ class RNNModel(Model):
             transformed_hidden: A tensor of shape
             (batch_size, self.config.transform_size)
         """
+        xav = tf.contrib.layers.xavier_initializer()
         with tf.variable_scope(scope):
             U = tf.get_variable("U", (self.config.hidden_size,
-                self.config.transform_size), initializer=xav())
+                self.config.transform_size), initializer=xav)
             transformed_hidden = tf.matmul(hidden, U)
         return transformed_hidden
 
@@ -269,10 +270,10 @@ class RNNModel(Model):
         
         body_hidden = self.add_hidden_op(input_type='bodies', scope=self.body_scope)
         body_transformed = self.add_transform_op(body_hidden, scope=self.body_scope)
-        pred_input = tf.concat([headline_transformed, body_transformed], axis=0)
+        pred_input = tf.concat(1, [headline_transformed, body_transformed])
 
         with tf.variable_scope("prediction_op"):
-           W = tf.get_variable("W", (self.config.transform_size,
+           W = tf.get_variable("W", (2* self.config.transform_size,
             self.config.n_classes))
            preds = tf.matmul(pred_input, W)
         return preds
@@ -337,10 +338,15 @@ class RNNModel(Model):
         self.build()
 
 
-def do_train(train_bodies, train_stances, dimension, embedding_path):
+def do_train(train_bodies, train_stances, dimension, embedding_path,
+    max_headline_len=None, max_body_len=400):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
+    if max_headline_len is None:
+        max_headline_len = fnc_data_train.max_headline_len
+    if max_body_len is None:
+        max_body_len = fnc_data_train.max_body_len
 
     # For convenience, create the word indices map over the entire dataset
     logging.info("Building word-to-index map ...")
@@ -353,18 +359,16 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
     logging.info("Vectorizing data ...")
     # Vectorize and assemble the training data
     headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
-        fnc_data_train.max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices,
-        fnc_data_train.max_body_len)
-    training_data = (headline_vectors, body_vectors, fnc_data_train.stances)
+        max_headline_len)
+    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
     headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
-        fnc_data_train.max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices,
-        fnc_data_train.max_body_len)
-    dev_data = (headline_vectors, body_vectors, fnc_data_dev.stances)
+        max_headline_len)
+    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
 
     config = Config()
     handler = logging.FileHandler(config.log_output)
@@ -376,8 +380,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
     with tf.Graph().as_default():
         logger.info("Building model...",)
         start = time.time()
-        model = RNNModel(config, fnc_data_train.max_headline_len,
-            fnc_data_train.max_body_len, embeddings)
+        model = RNNModel(config, max_headline_len, max_body_len, embeddings)
         logger.info("took %.2f seconds", time.time() - start)
 
         init = tf.global_variables_initializer()
@@ -385,9 +388,12 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
 
         with tf.Session() as session:
             session.run(init)
-            model.fit(session, saver, train, dev)
+            logging.info('Fitting ...')
+            model.fit(session, saver, training_data, dev_data)
             # Save predictions in a text file.
-            output = model.output(session, dev)
+            logging.info('Outputting ...')
+            output = model.output(session, dev_data)
+            # TODO(akshayka): Pickle output
             headlines, bodies = output[0]
             indices_to_words = {word_indices[w] : w for w in word_indices}
             headlines = [' '.join(
@@ -419,9 +425,9 @@ if __name__ == "__main__":
         '--train-stances', type=argparse.FileType('r'),
         default="fnc-1-data/train_stances.csv", help="Training data")
     command_parser.add_argument('-e', '--embedding_path', type=str,
-        default="glove/glove.6B.300d.txt", help="Path to word vectors file")
+        default="glove/glove.6B.50d.txt", help="Path to word vectors file")
     command_parser.add_argument('-d', '--dimension', type=int,
-        default=300, help="Dimension of pretrained word vectors")
+        default=50, help="Dimension of pretrained word vectors")
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()

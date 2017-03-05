@@ -1,9 +1,11 @@
-from collections import Counter, namedtuple
+from collections import Counter, defaultdict, namedtuple
 import csv
 import logging
 import os
 import pickle
 import re
+import time
+import sys
 
 import numpy as np
 
@@ -249,7 +251,8 @@ PAD_TOKEN = "___PPPADDD___"
 
 def word_indices_to_words(example, indices_to_words):
     # NB: 0 is the padding index
-    return [indices_to_words[i] for i in example if i != 0]
+    # TODO(akshayka): HACK -- i is a list of features
+    return [indices_to_words[i[0]] for i in example if i[0] != 0]
 
 
 def vectorize(examples, word_indices, max_len):
@@ -266,8 +269,9 @@ def vectorize(examples, word_indices, max_len):
             matrix
     """
     pad_idx = word_indices[PAD_TOKEN]
-    vectorized_examples = [[word_indices[w] for w in e] + \
-        [pad_idx] * max(max_len - len(e), 0) for e in examples][:max_len]
+    vectorized_examples = [([[word_indices[w]] for w in e] + \
+        [[pad_idx]] * max(max_len - len(e), 0))[:max_len] for e in examples]
+    return vectorized_examples
 
 
 def load_embeddings(word_indices, dimension=300,

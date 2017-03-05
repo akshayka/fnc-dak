@@ -111,7 +111,7 @@ class Model(object):
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
         feed = self.create_feed_dict(headlines_batch, bodies_batch)
-        predictions = sess.run(self.pred, feed_dict=feed)
+        predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
         return predictions
 
 
@@ -121,8 +121,8 @@ class Model(object):
         """
 
         preds = []
-        headlines, bodies, stances = inputs
-        data = [headlines, bodies]
+        headlines, bodies, stances = zip(*inputs)
+        data = zip(headlines, bodies)
         prog = Progbar(target=1 + int(len(stances) / self.config.batch_size))
         # TODO(akshayka): Verify that data is in the correct structure
         for i, batch in enumerate(minibatches(data, self.config.batch_size,
@@ -130,7 +130,7 @@ class Model(object):
             preds_ = self.predict_on_batch(sess, *batch)
             preds += list(preds_)
             prog.update(i + 1, [])
-        return ((headlines, bodies), stances, preds)
+        return (headlines, bodies), stances, preds
 
 
     def evaluate(self, sess, examples):
@@ -152,15 +152,15 @@ class Model(object):
 
         correct_guessed_related, total_gold_related, total_guessed_related = (
             0., 0., 0.)
-        for _, labels, labels_  in self.output(sess, examples):
-            for l, l_ in zip(labels, labels_):
-                token_cm.update(l, l_)
-                if l == l_ and l in RELATED:
-                    correct_guessed_related += 1
-                if l in RELATED:
-                    total_gold_related += 1
-                if l_ in RELATED:
-                    total_guessed_related += 1
+        _, labels, labels_ = self.output(sess, examples)
+        for l, l_ in zip(labels, labels_):
+            token_cm.update(l, l_)
+            if l == l_ and l in RELATED:
+                correct_guessed_related += 1
+            if l in RELATED:
+                total_gold_related += 1
+            if l_ in RELATED:
+                total_guessed_related += 1
 
         p = correct_guessed_related / total_guessed_related if \
             total_guessed_related > 0 else 0
