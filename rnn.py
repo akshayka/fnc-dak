@@ -218,7 +218,7 @@ class RNNModel(Model):
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
-        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
+        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), dtype=tf.float64)
         with tf.variable_scope(self.config.cell + '_' + scope):
             # Upon completion of this loop,
             # h will contain the final hidden representation of the text
@@ -242,9 +242,10 @@ class RNNModel(Model):
             transformed_hidden: A tensor of shape
             (batch_size, self.config.transform_size)
         """
+        xav = tf.contrib.layers.xavier_initializer
         with tf.variable_scope(scope):
             U = tf.get_variable("U", (self.config.hidden_size,
-                self.config.transform_size), initializer=xav())
+                self.config.transform_size), initializer=xav(), dtype=tf.float64)
             transformed_hidden = tf.matmul(hidden, U)
         return transformed_hidden
 
