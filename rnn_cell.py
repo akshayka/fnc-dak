@@ -57,11 +57,11 @@ class RNNCell(tf.nn.rnn_cell.RNNCell):
             H = self.state_size
             D = self.input_size
             W_h = tf.get_variable("W_h", [H, H],
-                initializer=tf.contrib.layers.xavier_initializer())
+                initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float64)
             W_x = tf.get_variable("W_x", [D, H],
-                initializer=tf.contrib.layers.xavier_initializer())
+                initializer=tf.contrib.layers.xavier_initializer(), dtype=tf.float64)
             b = tf.get_variable("b", [H],
-                initializer=tf.constant_initializer(0.0))
+                initializer=tf.constant_initializer(0.0), dtype=tf.float64)
             theta = tf.matmul(inputs, W_x) + tf.matmul(state, W_h) + b
             # Upon hitting padding, propagate the old state forward
             # indicator_i = 1[x[i] != 0], x[i] the ith row of inputs

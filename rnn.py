@@ -218,7 +218,7 @@ class RNNModel(Model):
         else:
             raise ValueError("Unsuppported cell type: " + self.config.cell)
 
-        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), tf.float32)
+        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size), dtype=tf.float64)
         with tf.variable_scope(self.config.cell + '_' + scope):
             # Upon completion of this loop,
             # h will contain the final hidden representation of the text
