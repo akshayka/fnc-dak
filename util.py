@@ -24,6 +24,27 @@ RELATED = [DISCUSS, DISAGREE, AGREE]
 
 
 # ----------------- Utilities for evaluation ------------------
+def to_table(data, row_labels, column_labels, precision=2, digits=4):
+    """Pretty print tables.
+    Assumes @data is a 2D array and uses @row_labels and @column_labels
+    to display table.
+    """
+    # Convert data to strings
+    data = [["%04.2f"%v for v in row] for row in data]
+    cell_width = max(
+        max(map(len, row_labels)),
+        max(map(len, column_labels)),
+        max(max(map(len, row)) for row in data))
+    def c(s):
+        """adjust cell output"""
+        return s + " " * (cell_width - len(s))
+    ret = ""
+    ret += "\t".join(map(c, column_labels)) + "\n"
+    for l, row in zip(row_labels, data):
+        ret += "\t".join(map(c, [l] + row)) + "\n"
+    return ret
+
+
 class ConfusionMatrix(object):
     """
     A confusion matrix stores counts of (true, guessed) labels, used to
