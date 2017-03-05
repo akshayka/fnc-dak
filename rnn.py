@@ -386,9 +386,9 @@ def do_train(train_bodies, train_stances, dimension, embedding_path):
 
         with tf.Session() as session:
             session.run(init)
-            model.fit(session, saver, train, dev)
+            model.fit(session, saver, fnc_data_train, fnc_data_dev)
             # Save predictions in a text file.
-            output = model.output(session, dev)
+            output = model.output(session, fnc_data_dev)
             headlines, bodies = output[0]
             indices_to_words = {word_indices[w] : w for w in word_indices}
             headlines = [' '.join(
