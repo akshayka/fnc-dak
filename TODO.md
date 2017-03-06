@@ -3,7 +3,8 @@
 
 ## Training word vectors
 1. Experiment: do not train word vectors
-2. Experiment: train word vectors
+2. Experiment: train word vectors (but ceil has no gradient ... how do we get
+               around this?)
 3. Experiment: train word vectors after N epochs, N a hyperparameter
 
 ## Transformation
