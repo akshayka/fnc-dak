@@ -1,3 +1,6 @@
+## Features
+1. Remove stop-words, weight word vectors by TF-IDF
+
 ## Training word vectors
 1. Experiment: do not train word vectors
 2. Experiment: train word vectors
