@@ -277,7 +277,9 @@ class RNNModel(Model):
         with tf.variable_scope("prediction_op"):
            W = tf.get_variable("W", (2* self.config.transform_size,
             self.config.n_classes))
-           preds = tf.matmul(pred_input, W)
+           b = tf.get_variable("b", (self.config.n_classes),
+                initializer=tf.constant_initializer(0.0), dtype=tf.float32)
+           preds = tf.matmul(pred_input, W) + b
         return preds
 
 
@@ -292,8 +294,8 @@ class RNNModel(Model):
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(preds,
-            self.labels_placeholder)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=preds,
+            labels=self.labels_placeholder)
         loss = tf.reduce_mean(loss)
         return loss
 

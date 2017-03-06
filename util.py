@@ -349,11 +349,11 @@ def read_stances(fstream):
     body_ids = []
     stances = []
     for row in csv_reader:
-        headlines.append(tokenize_text(row[0]))
-        body_ids.append(int(row[1]))
         stance = row[2]
         if stance == "unrelated":
-            stances.append(UNRELATED)
+            # TODO(akshayka) HACK HACK
+            continue
+            #stances.append(UNRELATED)
         elif stance == "discuss":
             stances.append(DISCUSS)
         elif stance == "disagree":
@@ -362,6 +362,8 @@ def read_stances(fstream):
             stances.append(AGREE)
         else:
             raise ValueError("Unknown stance %s" % stance)
+        headlines.append(tokenize_text(row[0]))
+        body_ids.append(int(row[1]))
     return [headlines, body_ids, stances]
 
 
