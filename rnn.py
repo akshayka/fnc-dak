@@ -37,11 +37,12 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        embed_size=50, hidden_size=50, batch_size=52, n_epochs=10, lr=0.001,
-        output_path=None):
+        train_inputs=False, embed_size=50, hidden_size=50,
+        batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
+        self.train_inputs = train_inputs
         self.embed_size = embed_size
         self.hidden_size = hidden_size
         self.batch_size = batch_size
@@ -146,7 +147,13 @@ class RNNModel(Model):
                         (None, max_length, n_features*embed_size)
         """
         # TODO(akshayka): Train embeddings after N iterations
-        embeddings = tf.constant(self.pretrained_embeddings, dtype=tf.float32)
+        if not self.config.train_inputs:
+            embeddings = tf.constant(self.pretrained_embeddings,
+                dtype=tf.float32)
+        else:
+            embeddings = tf.Variable(self.pretrained_embeddings,
+                dtype=tf.float32)
+
         if input_type == "headlines":
             input_embeddings = tf.nn.embedding_lookup(embeddings,
                 self.headlines_placeholder)
@@ -317,7 +324,7 @@ class RNNModel(Model):
         self.build()
 
 
-def do_train(train_bodies, train_stances, dimension, hidden_size,
+def do_train(train_bodies, train_stances, dimension, hidden_size, train_inputs,
     embedding_path, max_headline_len=None, max_body_len=400):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
@@ -353,7 +360,8 @@ def do_train(train_bodies, train_stances, dimension, hidden_size,
         max_body_len)
     dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
 
-    config = Config(embed_size=dimension, hidden_size=hidden_size)
+    config = Config(embed_size=dimension, hidden_size=hidden_size,
+        train_inputs=train_inputs)
     handler = logging.FileHandler(config.log_output)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(
@@ -413,6 +421,8 @@ if __name__ == "__main__":
         default=50, help="Dimension of hidden represntation")
     command_parser.add_argument('-m', '--method', type=str,
         default="bag_of_words", help="Input embedding method")
+    command_parser.add_argument('-ti', '--train_inputs', action='store_true',
+        default=False)
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
@@ -422,4 +432,4 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         ARGS.func(ARGS.train_bodies, ARGS.train_stances, ARGS.dimension,
-            ARGS.hidden_size, embedding_path)
+            ARGS.hidden_size, ARGS.train_inputs, embedding_path)
