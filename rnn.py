@@ -51,10 +51,10 @@ class Config:
             # Where to save things.
             self.output_path = output_path
         else:
-            self.output_path = "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}/".format(
-                datetime.now(), embed_size, hidden_size, method)
-            if self.train_inputs:
-                self.output_path += '_ti'
+            ti_str = "_ti" if self.train_inputs else ""
+            self.output_path = \
+                "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}{:}/".format(
+                datetime.now(), embed_size, hidden_size, method, ti_str)
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
@@ -332,7 +332,7 @@ class RNNModel(Model):
 
 
 def do_train(train_bodies, train_stances, dimension, embedding_path, config,
-    max_headline_len=None, max_body_len=400):
+    max_headline_len=None, max_body_len=None):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
