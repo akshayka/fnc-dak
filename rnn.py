@@ -16,8 +16,7 @@ from datetime import datetime
 
 import tensorflow as tf
 import numpy as np
-import copy
-import pdb
+
 import util
 from model import Model
 from rnn_cell import RNNCell
@@ -228,7 +227,9 @@ class RNNModel(Model):
                 sequence_length=seqlen, dtype=tf.float32, scope=scope)
         elif self.config.method == "bag_of_words":
             # (batch_size, seq_length, embed_dim) -> (batch_size, embed_dim)
-            mean = tf.divide(tf.reduce_sum(input_tensor=x, axis=1)) / seqlen
+            seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
+            mean = tf.divide(tf.reduce_sum(input_tensor=x, axis=1),
+                seqlen_scale)
             with tf.variable_scope(scope):
                 U = tf.get_variable("U", (self.config.embed_size,
                     self.config.hidden_size), initializer=xav)
@@ -311,6 +312,7 @@ class RNNModel(Model):
         pretrained_embeddings):
         # super(RNNModel, self).__init__(config, report)
         self.config = config
+        logging.debug("Creating model with method %s", self.config.method)
         self.max_headline_len = max_headline_len
         self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
@@ -326,8 +328,8 @@ class RNNModel(Model):
         self.build()
 
 
-def do_train(train_bodies, train_stances, dimension, hidden_size, train_inputs,
-    embedding_path, max_headline_len=None, max_body_len=400):
+def do_train(train_bodies, train_stances, dimension, embedding_path, config,
+    max_headline_len=None, max_body_len=400):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
@@ -362,8 +364,6 @@ def do_train(train_bodies, train_stances, dimension, hidden_size, train_inputs,
         max_body_len)
     dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
 
-    config = Config(embed_size=dimension, hidden_size=hidden_size,
-        train_inputs=train_inputs)
     handler = logging.FileHandler(config.log_output)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(
@@ -425,6 +425,8 @@ if __name__ == "__main__":
         default="bag_of_words", help="Input embedding method")
     command_parser.add_argument('-ti', '--train_inputs', action='store_true',
         default=False)
+    command_parser.add_argument('-b', '--batch_size', type=int,
+        default=52)
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
@@ -433,5 +435,10 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     else:
-        ARGS.func(ARGS.train_bodies, ARGS.train_stances, ARGS.dimension,
-            ARGS.hidden_size, ARGS.train_inputs, embedding_path)
+        config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
+            embed_size=ARGS.dimension, hidden_size=ARGS.hidden_size,
+            batch_size=ARGS.batch_size)
+        ARGS.func(train_bodies=ARGS.train_bodies,
+            train_stances=ARGS.train_stances,
+            dimension=ARGS.dimension,
+            embedding_path=embedding_path, config=config)
