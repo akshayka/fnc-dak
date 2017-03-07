@@ -36,15 +36,14 @@ class Config:
     instantiation.
     """
     # TODO(akshayka): Add dropout or regularization
-    def __init__(self, n_features=1, n_classes=4, cell="rnn",
-        embed_size=50, hidden_size=50, transform_size=30,
-        batch_size=52, n_epochs=10, lr=0.001, output_path=None):
+    def __init__(self, n_features=1, n_classes=4, method="rnn",
+        embed_size=50, hidden_size=50, batch_size=52, n_epochs=10, lr=0.001,
+        output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
-        self.cell = cell
+        self.method = method
         self.embed_size = embed_size
         self.hidden_size = hidden_size
-        self.transform_size = transform_size
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.lr = lr
@@ -207,49 +206,28 @@ class RNNModel(Model):
         max_len = self.max_headline_len if input_type == "headlines" \
             else self.max_body_len
 
-        # Use the cell defined below. For Q2, we will just be using the
-        # RNNCell you defined, but for Q3, we will run this code again
-        # with a GRU cell!
-        if self.config.cell == "rnn":
-            cell = RNNCell(self.config.n_features * self.config.embed_size,
-                self.config.hidden_size)
-        elif self.config.cell == "gru":
-            cell = GRUCell(self.config.n_features * self.config.embed_size,
-                self.config.hidden_size)
-        else:
-            raise ValueError("Unsuppported cell type: " + self.config.cell)
-
-        h = tf.zeros((tf.shape(x)[0], self.config.hidden_size),
-            dtype=tf.float32)
-        with tf.variable_scope(self.config.cell + '_' + scope):
-            # Upon completion of this loop,
-            # h will contain the final hidden representation of the text
-            for time_step in range(max_len):
-                if time_step > 0:
-                    tf.get_variable_scope().reuse_variables()
-                x_t = x[:,time_step,:]
-                o_t, h = cell(inputs=x_t, state=h, scope=scope)
-        return h
-
-    
-    def add_transform_op(self, hidden, scope):
-        """Adds Ops for the hidden state transformation to the graph.
-
-        Args:
-            hidden: A tensor of shape (batch_size, self.config.hidden_size)
-                    containing the final hidden state of the RNN.
-            scope: The variable scope to use. (For example,
-                   'headline' or 'body'.)
-        Returns:
-            transformed_hidden: A tensor of shape
-            (batch_size, self.config.transform_size)
-        """
+        used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
+        seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
         xav = tf.contrib.layers.xavier_initializer()
-        with tf.variable_scope(scope):
-            U = tf.get_variable("U", (self.config.hidden_size,
-                self.config.transform_size), initializer=xav)
-            transformed_hidden = tf.matmul(hidden, U)
-        return transformed_hidden
+        if self.config.method in ["rnn", "gru"]:
+            if self.config.method == "rnn":
+                cell = tf.nn.rnn_cell.BasicRNNCell(
+                    num_units=self.config.hidden_size)
+            elif self.config.method == "gru":
+                cell = tf.nn.rnn_cell.GRUCell(num_units=self.config.hidden_size)
+            _, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
+                sequence_length=seqlen, dtype=tf.float32, scope=scope)
+        elif self.config.method == "bag_of_words":
+            # (batch_size, seq_length, embed_dim) -> (batch_size, embed_dim)
+            mean = tf.divide(tf.reduce_sum(input_tensor=x, axis=1)) / seqlen
+            with tf.variable_scope(scope):
+                U = tf.get_variable("U", (self.config.embed_size,
+                    self.config.hidden_size), initializer=xav)
+                h = tf.matmul(mean, U)
+        else:
+            raise ValueError("Unsuppported method: " + self.config.method)
+
+        return h
 
 
     def add_prediction_op(self):
@@ -267,15 +245,12 @@ class RNNModel(Model):
         """
         headline_hidden = self.add_hidden_op(input_type='headlines',
             scope=self.headline_scope)
-        headline_transformed = self.add_transform_op(headline_hidden,
-            scope=self.headline_scope)
-        
-        body_hidden = self.add_hidden_op(input_type='bodies', scope=self.body_scope)
-        body_transformed = self.add_transform_op(body_hidden, scope=self.body_scope)
-        pred_input = tf.concat(1, [headline_transformed, body_transformed])
+        body_hidden = self.add_hidden_op(input_type='bodies',
+            scope=self.body_scope)
+        pred_input = tf.concat(1, [headline_hidden, body_hidden])
 
         with tf.variable_scope("prediction_op"):
-           W = tf.get_variable("W", (2* self.config.transform_size,
+           W = tf.get_variable("W", (2 * self.config.hidden_size,
             self.config.n_classes))
            b = tf.get_variable("b", (self.config.n_classes),
                 initializer=tf.constant_initializer(0.0), dtype=tf.float32)
@@ -342,8 +317,8 @@ class RNNModel(Model):
         self.build()
 
 
-def do_train(train_bodies, train_stances, dimension, embedding_path,
-    max_headline_len=None, max_body_len=400):
+def do_train(train_bodies, train_stances, dimension, hidden_size,
+    embedding_path, max_headline_len=None, max_body_len=400):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
@@ -364,17 +339,19 @@ def do_train(train_bodies, train_stances, dimension, embedding_path,
     # Vectorize and assemble the training data
     headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
         max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
+        max_body_len)
     training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
     headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
         max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
+        max_body_len)
     dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
 
-    config = Config()
+    config = Config(embed_size=dimension, hidden_size=hidden_size)
     handler = logging.FileHandler(config.log_output)
     handler.setLevel(logging.DEBUG)
     handler.setFormatter(logging.Formatter(
@@ -428,16 +405,19 @@ if __name__ == "__main__":
     command_parser.add_argument('-ts',
         '--train-stances', type=argparse.FileType('r'),
         default="fnc-1-data/train_stances.csv", help="Training data")
-    command_parser.add_argument('-e', '--embedding_path', type=str,
-        default="glove/glove.6B.50d.txt", help="Path to word vectors file")
     command_parser.add_argument('-d', '--dimension', type=int,
         default=50, help="Dimension of pretrained word vectors")
+    command_parser.add_argument('-hd', '--hidden_size', type=int,
+        default=50, help="Dimension of hidden represntation")
+    command_parser.add_argument('-m', '--method', type=str,
+        default="bag_of_words", help="Input embedding method")
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
+    embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
     if ARGS.func is None:
         parser.print_help()
         sys.exit(1)
     else:
         ARGS.func(ARGS.train_bodies, ARGS.train_stances, ARGS.dimension,
-            ARGS.embedding_path)
+            ARGS.hidden_size, embedding_path)

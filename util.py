@@ -91,7 +91,7 @@ class ConfusionMatrix(object):
             acc = (tp + tn)/(tp + tn + fp + fn) if tp > 0  else 0
             prec = (tp)/(tp + fp) if tp > 0  else 0
             rec = (tp)/(tp + fn) if tp > 0  else 0
-            f1 = 2 * prec * rec / (prec + rec) if tp > 0  else 0
+            f1 = 2 * prec * rec / (prec + rec) if prec + rec > 0  else 0
 
             # update micro/macro averages
             micro += np.array([tp, fp, tn, fn])
