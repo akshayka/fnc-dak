@@ -227,6 +227,7 @@ class Progbar(object):
         self.update(self.seen_so_far+n, values)
 
 
+# TODO(akshayka): Balanced minibatches
 def get_minibatches(data, minibatch_size, shuffle=True):
     """
     Iterates through the provided data one minibatch at at time. You can use this function to
@@ -352,8 +353,8 @@ def read_stances(fstream):
         stance = row[2]
         if stance == "unrelated":
             # TODO(akshayka) HACK HACK
-            continue
-            #stances.append(UNRELATED)
+            #continue
+            stances.append(UNRELATED)
         elif stance == "discuss":
             stances.append(DISCUSS)
         elif stance == "disagree":
