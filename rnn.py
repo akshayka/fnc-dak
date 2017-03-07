@@ -322,6 +322,8 @@ def do_train(train_bodies, train_stances, dimension, hidden_size,
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
+    logging.info("%d training examples", len(fnc_data_train.headlines))
+    logging.info("%d dev examples", len(fnc_data_dev.headlines))
     if max_headline_len is None:
         max_headline_len = fnc_data_train.max_headline_len
     if max_body_len is None:

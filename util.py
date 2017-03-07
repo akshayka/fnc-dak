@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import time
+import random
 import sys
 
 import numpy as np
@@ -388,17 +389,28 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     bodies = read_bodies(train_bodies_fstream)
     stances = read_stances(train_stances_fstream)
     body_ids = stances[1]
+    unique_body_ids = list(set(body_ids))
+    random.shuffle(unique_body_ids)
+
+    # Ensure that the set of bodies present in the training data is
+    # disjoint from the set of bodies present in the test data
+    num_examples = len(stances[0])
+    split = int(train_test_split * len(unique_body_ids))
+    train_body_ids = set(unique_body_ids[:split])
+    train_indices = [i for i, body_id in \
+        enumerate(body_ids) if body_id in train_body_ids]
+    set_train = set(train_indices)
+    test_indices = [i for i in range(num_examples) \
+        if i not in set_train]
+
+    # Overwrite body_ids with the body text
     for i, body_id in enumerate(body_ids):
         body_ids[i] = bodies[body_id]
     fnc_data = FNCData(
         headlines=stances[0], bodies=stances[1], stances=stances[2],
         max_headline_len=0, max_body_len=0)
 
-    # Populate training data
-    num_examples = len(fnc_data.headlines)
-    train_indices = np.random.choice(np.arange(num_examples), 
-        size=int(train_test_split * num_examples), replace=False)
-
+    # Populate training data from train_indices
     train_headlines = [fnc_data.headlines[idx] for idx in train_indices]
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
@@ -412,9 +424,7 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
         stances=[fnc_data.stances[idx] for idx in train_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
-    # Populate test data
-    test_indices = [idx for idx in np.arange(num_examples) \
-        if idx not in train_indices]
+    # Populate test data from test_indices
     fnc_data_test = FNCData(
         headlines=[fnc_data.headlines[idx] for idx in test_indices],
         bodies=[fnc_data.bodies[idx] for idx in test_indices],
