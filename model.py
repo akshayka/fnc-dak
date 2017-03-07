@@ -111,7 +111,7 @@ class Model(object):
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
         feed = self.create_feed_dict(headlines_batch, bodies_batch)
-        predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+        predictions = sess.run(self.argmax_pred, feed_dict=feed)
         return predictions
 
 
@@ -237,5 +237,6 @@ class Model(object):
     def build(self):
         self.add_placeholders()
         self.pred = self.add_prediction_op()
+        self.argmax_pred = tf.argmax(self.pred, axis=1)
         self.loss = self.add_loss_op(self.pred)
         self.train_op = self.add_training_op(self.loss)

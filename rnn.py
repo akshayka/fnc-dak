@@ -383,7 +383,7 @@ def do_train(train_bodies, train_stances, dimension, hidden_size,
             bodies = [' '.join(
                 util.word_indices_to_words(b, indices_to_words))
                 for b in bodies]
-            output = (headlines, bodies, output[1], output[2])
+            output = zip(headlines, bodies, output[1], output[2])
 
             with open(model.config.eval_output, 'w') as f:
                 for headline, body, label, prediction in output:
