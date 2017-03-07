@@ -17,11 +17,10 @@
 3. Experiment: change optimizer
 
 ## Debugging
-1. Is a bug causing our model to output prediction == UNRELATED for every
-   example, or is this result symptomatic of a problem with our model 
-   architecture? Possible bugs: loss is not configured correctly, feed input
-   to labels_placeholders is always UNRELATED, variables are not being trained,
-   tf.argmax is taken across wrong axis or applied to the wrong object or
-   returns something that we do not expect
+1. Verify that the data is correctly split into training and development
+   subsets in util.py. The scores we obtain are suspiciously low, though
+   the training loss is lower than it was before we implemented the hard
+   separation of body identifiers between train and dev.
+   
 
 
