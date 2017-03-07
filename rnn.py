@@ -364,14 +364,16 @@ def do_train(train_bodies, train_stances, dimension, embedding_path,
     # Vectorize and assemble the training data
     headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
         max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
+        max_body_len)
     training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
     headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
         max_headline_len)
-    body_vectors = util.vectorize(fnc_data.bodies, word_indices, max_body_len)
+    body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
+        max_body_len)
     dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
 
     config = Config()
