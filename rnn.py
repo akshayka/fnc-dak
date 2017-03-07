@@ -54,6 +54,8 @@ class Config:
         else:
             self.output_path = "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}/".format(
                 datetime.now(), embed_size, hidden_size, method)
+            if self.train_inputs:
+                self.output_path += '_ti'
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
