@@ -51,8 +51,8 @@ class Config:
             # Where to save things.
             self.output_path = output_path
         else:
-            self.output_path = "results/{:%Y%m%d_%H%M%S}/".format(
-                datetime.now())
+            self.output_path = "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}/".format(
+                datetime.now(), embed_size, hidden_size, method)
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
