@@ -153,7 +153,8 @@ class RNNModel(Model):
                 dtype=tf.float32)
         else:
             with tf.variable_scope(scope):
-                embeddings = tf.Variable("embeddings",
+                embeddings = tf.get_variable("embeddings",
+                    shape=np.shape(self.pretrained_embeddings),
                     initializer=tf.constant_initializer(
                         self.pretrained_embeddings), dtype=tf.float32)
 
