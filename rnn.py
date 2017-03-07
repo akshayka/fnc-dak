@@ -125,7 +125,7 @@ class RNNModel(Model):
         return feed_dict
 
 
-    def add_embedding(self, input_type):
+    def add_embedding(self, input_type, scope):
         """Adds an embedding layer that maps from input tokens (integers) to
         vectors and then concatenates those vectors:
 
@@ -152,8 +152,10 @@ class RNNModel(Model):
             embeddings = tf.constant(self.pretrained_embeddings,
                 dtype=tf.float32)
         else:
-            embeddings = tf.Variable(self.pretrained_embeddings,
-                dtype=tf.float32)
+            with tf.variable_scope(scope):
+                embeddings = tf.Variable("embeddings",
+                    initializer=tf.constant_initializer(
+                        self.pretrained_embeddings), dtype=tf.float32)
 
         if input_type == "headlines":
             input_embeddings = tf.nn.embedding_lookup(embeddings,
@@ -210,7 +212,7 @@ class RNNModel(Model):
         Returns:
             hidden: tf.Tensor of shape (batch_size, self.config.hidden_size)
         """
-        x = self.add_embedding(input_type)
+        x = self.add_embedding(input_type, scope)
         max_len = self.max_headline_len if input_type == "headlines" \
             else self.max_body_len
 
