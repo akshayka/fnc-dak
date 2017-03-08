@@ -419,10 +419,12 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 # TODO(akshayka): Plotting code (loss / gradient size ... ) /
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Trains and tests FNCModel")
+    parser = argparse.ArgumentParser(description="Trains and tests FNCModel",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     subparsers = parser.add_subparsers()
 
-    command_parser = subparsers.add_parser("train", help="")
+    command_parser = subparsers.add_parser("train", help="Run do_train",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # ------------------------ Input Data ------------------------
     command_parser.add_argument("-tb", "--train_bodies",
         type=argparse.FileType("r"), default="fnc-1-data/train_bodies.csv",
@@ -445,13 +447,15 @@ if __name__ == "__main__":
         default="bag_of_words", help="Input embedding method; one of %s" %
         pprint.pformat(FNCModel.SUPPORTED_METHODS))
     # ------------------------ Optimization Settings ------------------------
-    command_parser.add_argument("-dp", "--dropout", type=float, default=0.2)
+    command_parser.add_argument("-dp", "--dropout", type=float, default=0.2,
+        help="Dropout probability")
     command_parser.add_argument("-ti", "--train_inputs", action="store_true",
-        default=False)
+        default=False, help="Include in order to train embeddings")
     command_parser.add_argument("-b", "--batch_size", type=int,
-        default=52)
+        default=52, help="The batch size")
     command_parser.add_argument("-ul", "--unweighted_loss",
-        action="store_true", default=False)
+        action="store_true", default=False,
+        help="Include to use unweighted loss")
     # ------------------------ Output Settings ------------------------
     command_parser.add_argument("-v", "--verbose", action="store_true",
         default=False)
