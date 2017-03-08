@@ -35,14 +35,15 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        train_inputs=False, embed_size=50, hidden_size=50,
+        train_inputs=False, embed_size=50, hidden_sizes=[50], layers=1,
         batch_size=52, n_epochs=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
         self.train_inputs = train_inputs
         self.embed_size = embed_size
-        self.hidden_size = hidden_size
+        self.hidden_sizes = hidden_sizes
+        self.layers = layers
         self.batch_size = batch_size
         self.n_epochs = n_epochs
         self.lr = lr
@@ -53,7 +54,8 @@ class Config:
             ti_str = "_ti" if self.train_inputs else ""
             self.output_path = \
                 "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}{:}/".format(
-                datetime.now(), embed_size, hidden_size, method, ti_str)
+                datetime.now(), self.embed_size, self.layers, self.method,
+                ti_str)
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
@@ -180,7 +182,7 @@ class FNCModel(Model):
             scope : scope for variables
 
         Returns:
-            hidden: tf.Tensor of shape (batch_size, self.config.hidden_size)
+            hidden: tf.Tensor of shape (batch_size, self.config.hidden_sizes[-1])
         """
         x = self.add_embedding(input_type, scope)
         max_len = self.max_headline_len if input_type == "headlines" \
@@ -192,10 +194,11 @@ class FNCModel(Model):
         if self.config.method in ["rnn", "gru"]:
             if self.config.method == "rnn":
                 cell = tf.nn.rnn_cell.BasicRNNCell(
-                    num_units=self.config.hidden_size)
+                    num_units=self.config.hidden_sizes[0])
             elif self.config.method == "gru":
-                cell = tf.nn.rnn_cell.GRUCell(num_units=self.config.hidden_size)
-            _, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
+                cell = tf.nn.rnn_cell.GRUCell(
+                    num_units=self.config.hidden_sizes[0])
+            outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
                 sequence_length=seqlen, dtype=tf.float32, scope=scope)
         elif self.config.method == "bag_of_words":
             # (batch_size, seq_length, embed_dim) -> (batch_size, embed_dim)
@@ -204,7 +207,7 @@ class FNCModel(Model):
                 seqlen_scale)
             with tf.variable_scope(scope):
                 U = tf.get_variable("U", (self.config.embed_size,
-                    self.config.hidden_size), initializer=xav)
+                    self.config.hidden_sizes[0]), initializer=xav)
                 h = tf.matmul(mean, U)
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
@@ -232,7 +235,7 @@ class FNCModel(Model):
         pred_input = tf.concat(1, [headline_hidden, body_hidden])
 
         with tf.variable_scope("prediction_op"):
-           W = tf.get_variable("W", (2 * self.config.hidden_size,
+           W = tf.get_variable("W", (2 * self.config.hidden_sizes[-1],
             self.config.n_classes))
            b = tf.get_variable("b", (self.config.n_classes),
                 initializer=tf.constant_initializer(0.0), dtype=tf.float32)
@@ -330,11 +333,11 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
-    headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
+    dev_headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
         max_headline_len)
-    body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
+    dev_body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
         max_body_len)
-    dev_data = zip(headline_vectors, body_vectors, fnc_data_dev.stances)
+    dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
 
     handler = logging.FileHandler(config.log_output)
     handler.setLevel(logging.DEBUG)
@@ -377,7 +380,6 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 
 
 # TODO(akshayka): Plotting code (loss / gradient size ... ) /
-# evaluation of results / etc etc
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Trains and tests FNCModel")
@@ -398,8 +400,10 @@ if __name__ == "__main__":
     command_parser.add_argument("-mbl", "--max_body_len", type=int,
         default=None, help="maximum number of words per body; if None, "
         "inferred from training data")
-    command_parser.add_argument("-hd", "--hidden_size", type=int,
-        default=50, help="Dimension of hidden represntation")
+    command_parser.add_argument("-hd", "--hidden_sizes", type=int, nargs="+",
+        default=[50], help="Dimensions of hidden represntations for each layer")
+    command_parser.add_argument("-l", "--layers", type=int,
+        default=1, help="Number of layers in the neural network")
     command_parser.add_argument("-m", "--method", type=str,
         default="bag_of_words", help="Input embedding method")
     command_parser.add_argument("-ti", "--train_inputs", action="store_true",
@@ -411,14 +415,16 @@ if __name__ == "__main__":
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
+    assert len(ARGS.hidden_sizes) == ARGS.layers
     embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
+
     if ARGS.func is None:
         parser.print_help()
         sys.exit(1)
     else:
         config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
-            embed_size=ARGS.dimension, hidden_size=ARGS.hidden_size,
-            batch_size=ARGS.batch_size)
+            embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
+            layers=ARGS.layers, batch_size=ARGS.batch_size)
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
             dimension=ARGS.dimension,
