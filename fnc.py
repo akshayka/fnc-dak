@@ -265,12 +265,11 @@ class FNCModel(Model):
         """
         if not self.config.unweighted_loss:
             # related_mask[i] == 1 if labels[i] > 0, 0 otherwise
-            related_mask = tf.sign(self.labels_placeholder)
+            related_mask = tf.cast(tf.sign(self.labels_placeholder), tf.float32)
             # unrelated_mask[i] == 1 if labels[i] == 0, 0 otherwise
-            unrelated_mask = tf.cast(tf.abs(related_mask - 1), tf.float32)
+            unrelated_mask = tf.abs(related_mask - 1)
             # weight_per_label[i] == 0.25 if labels[i] == 0, 1 otherwise
-            weight_per_label = (tf.cast(related_mask, tf.float32) +
-                0.25 * unrelated_mask)
+            weight_per_label = related_mask + 0.25 * unrelated_mask
             xent = tf.mul(weight_per_label,
                 tf.nn.sparse_softmax_cross_entropy_with_logits(
                     logits=preds,
@@ -424,8 +423,6 @@ if __name__ == "__main__":
         "inferred from training data")
     command_parser.add_argument("-hd", "--hidden_sizes", type=int, nargs="+",
         default=[50], help="Dimensions of hidden represntations for each layer")
-    command_parser.add_argument("-l", "--layers", type=int,
-        default=1, help="Number of layers in the neural network")
     command_parser.add_argument("-m", "--method", type=str,
         default="bag_of_words", help="Input embedding method; one of %s" %
         pprint.pformat(FNCModel.SUPPORTED_METHODS))
@@ -440,7 +437,7 @@ if __name__ == "__main__":
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
-    assert len(ARGS.hidden_sizes) == ARGS.layers
+    layers = len(ARGS.hidden_sizes)
     embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
 
     if ARGS.func is None:
@@ -449,7 +446,7 @@ if __name__ == "__main__":
     else:
         config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
             embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
-            layers=ARGS.layers, unweighted_loss=ARGS.unweighted_loss,
+            layers=layers, unweighted_loss=ARGS.unweighted_loss,
             batch_size=ARGS.batch_size)
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
