@@ -189,39 +189,51 @@ class FNCModel(Model):
         Returns:
             hidden: tf.Tensor of shape (batch_size, self.config.hidden_sizes[-1])
         """
-        x = self.add_embedding(input_type, scope)
-        max_len = self.max_headline_len if input_type == "headlines" \
-            else self.max_body_len
+        def sequence_length(x):
+            used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
+            seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
+            return seqlen
 
-        used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
-        seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
+        x = self.add_embedding(input_type, scope)
+        seqlen = sequence_length(x)
         xav = tf.contrib.layers.xavier_initializer()
-        # TODO(akshayka): account for multiple layers
-        if self.config.method in ["rnn", "gru"]:
+        if self.config.method in ["rnn", "gru", "lstm"]:
+            inputs = x
             if self.config.method == "rnn":
-                cell = tf.nn.rnn_cell.BasicRNNCell(
-                    num_units=self.config.hidden_sizes[0])
+                cell_type = tf.nn.rnn_cell.BasicRNNCell
             elif self.config.method == "gru":
-                cell = tf.nn.rnn_cell.GRUCell(
-                    num_units=self.config.hidden_sizes[0])
+                cell_type = tf.nn.rnn_cell.GRUCell
             elif self.config.method == "lstm":
                 # TODO(akshayka): Add identity initializer for weight matrix
-                cell = tf.nn.rnn_cell.LSTM(
-                    num_units=self.config.hidden_sizes[0])
-            if self.config.dropout > 0:
-                cell = tf.nn.rnn_cell.DropoutWrapper(cell=cell,
-                    output_keep_prob=(1-self.config.dropout))
-            outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
-                sequence_length=seqlen, dtype=tf.float32, scope=scope)
+                cell_type = tf.nn.rnn_cell.LSTM
+            for layer, hsz in enumerate(self.config.hidden_sizes):
+                cell = cell_type(num_units=hsz)
+                if self.config.dropout > 0:
+                    cell = tf.nn.rnn_cell.DropoutWrapper(cell=cell,
+                        output_keep_prob=(1-self.config.dropout))
+                # TODO(akshayka): Is this correct? Should I instead
+                # set reuse_variables to true?
+                local_scope = scope + "/layer" + str(layer)
+                outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=inputs,
+                    sequence_length=seqlen, dtype=tf.float32, scope=local_scope)
+                inputs = outputs
+                seqlen = sequence_length(inputs)
         elif self.config.method == "bag_of_words":
-            # (batch_size, seq_length, embed_dim) -> (batch_size, embed_dim)
+            inputs = x
+            shape = (tf.shape(inputs)[0], tf.shape(inputs)[2],
+                tf.shape(inputs)[2])
+            for layer in range(self.config.layers)[:-1]:
+                local_scope = scope + "/layer" + str(layer)
+                with tf.variable_scope(local_scope):
+                    U = tf.get_variable("U", shape=shape, initializer=xav)
+                    inputs = tf.nn.relu(tf.matmul(inputs, U))
             seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
-            mean = tf.divide(tf.reduce_sum(input_tensor=x, axis=1),
+            mean = tf.divide(tf.reduce_sum(input_tensor=inputs, axis=1),
                 seqlen_scale)
-            with tf.variable_scope(scope):
-                U = tf.get_variable("U", (self.config.embed_size,
-                    self.config.hidden_sizes[0]), initializer=xav)
-                h = tf.matmul(mean, U)
+            with tf.variable_scope(scope + "/transform_mean"):
+                U = tf.get_variable("U", shape=(tf.shape(inputs)[2],
+                    self.config.hidden_sizes[-1]), initializer=xav)
+                h = tf.nn.relu(tf.matmul(mean, U))
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
 
