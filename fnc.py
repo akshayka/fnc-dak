@@ -10,6 +10,7 @@ from __future__ import division
 import argparse
 import logging
 import os
+import pprint
 import sys
 import time
 from datetime import datetime
@@ -36,7 +37,8 @@ class Config:
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
         train_inputs=False, embed_size=50, hidden_sizes=[50], layers=1,
-        batch_size=52, n_epochs=10, lr=0.001, output_path=None):
+        batch_size=52, unweighted_loss=True, n_epochs=10, lr=0.001,
+        output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
@@ -45,6 +47,7 @@ class Config:
         self.hidden_sizes = hidden_sizes
         self.layers = layers
         self.batch_size = batch_size
+        self.unweighted_loss = unweighted_loss
         self.n_epochs = n_epochs
         self.lr = lr
         if output_path:
@@ -67,6 +70,7 @@ class FNCModel(Model):
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
     """
+    SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words"])
 
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
@@ -191,12 +195,17 @@ class FNCModel(Model):
         used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
         seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
         xav = tf.contrib.layers.xavier_initializer()
+        # TODO(akshayka): account for multiple layers
         if self.config.method in ["rnn", "gru"]:
             if self.config.method == "rnn":
                 cell = tf.nn.rnn_cell.BasicRNNCell(
                     num_units=self.config.hidden_sizes[0])
             elif self.config.method == "gru":
                 cell = tf.nn.rnn_cell.GRUCell(
+                    num_units=self.config.hidden_sizes[0])
+            elif self.config.method == "lstm":
+                # TODO(akshayka): Add identity initializer for weight matrix
+                cell = tf.nn.rnn_cell.LSTM(
                     num_units=self.config.hidden_sizes[0])
             outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
                 sequence_length=seqlen, dtype=tf.float32, scope=scope)
@@ -254,9 +263,22 @@ class FNCModel(Model):
         Returns:
             loss: A 0-d tensor (scalar)
         """
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=preds,
-            labels=self.labels_placeholder)
-        loss = tf.reduce_mean(loss)
+        if not self.config.unweighted_loss:
+            # related_mask[i] == 1 if labels[i] > 0, 0 otherwise
+            related_mask = tf.sign(self.labels_placeholder)
+            # unrelated_mask[i] == 1 if labels[i] == 0, 0 otherwise
+            unrelated_mask = tf.cast(tf.abs(related_mask - 1), tf.float32)
+            # weight_per_label[i] == 0.25 if labels[i] == 0, 1 otherwise
+            weight_per_label = (tf.cast(related_mask, tf.float32) +
+                0.25 * unrelated_mask)
+            xent = tf.mul(weight_per_label,
+                tf.nn.sparse_softmax_cross_entropy_with_logits(
+                    logits=preds,
+                    labels=self.labels_placeholder))
+        else:
+            xent = tf.nn.sparse_softmax_cross_entropy_with_logits(
+                logits=preds, labels=self.labels_placeholder)
+        loss = tf.reduce_mean(xent)
         return loss
 
 
@@ -386,11 +408,11 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers()
 
     command_parser = subparsers.add_parser("train", help="")
-    command_parser.add_argument("-tb", "--train-bodies",
+    command_parser.add_argument("-tb", "--train_bodies",
         type=argparse.FileType("r"), default="fnc-1-data/train_bodies.csv",
         help="Training data")
     command_parser.add_argument("-ts",
-        "--train-stances", type=argparse.FileType("r"),
+        "--train_stances", type=argparse.FileType("r"),
         default="fnc-1-data/train_stances.csv", help="Training data")
     command_parser.add_argument("-d", "--dimension", type=int,
         default=50, help="Dimension of pretrained word vectors")
@@ -405,11 +427,14 @@ if __name__ == "__main__":
     command_parser.add_argument("-l", "--layers", type=int,
         default=1, help="Number of layers in the neural network")
     command_parser.add_argument("-m", "--method", type=str,
-        default="bag_of_words", help="Input embedding method")
+        default="bag_of_words", help="Input embedding method; one of %s" %
+        pprint.pformat(FNCModel.SUPPORTED_METHODS))
     command_parser.add_argument("-ti", "--train_inputs", action="store_true",
         default=False)
     command_parser.add_argument("-b", "--batch_size", type=int,
         default=52)
+    command_parser.add_argument("-ul", "--unweighted_loss",
+        action="store_true", default=False)
     command_parser.add_argument("-v", "--verbose", action="store_true",
         default=False)
     command_parser.set_defaults(func=do_train)
@@ -424,7 +449,8 @@ if __name__ == "__main__":
     else:
         config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
             embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
-            layers=ARGS.layers, batch_size=ARGS.batch_size)
+            layers=ARGS.layers, unweighted_loss=ARGS.unweighted_loss,
+            batch_size=ARGS.batch_size)
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
             dimension=ARGS.dimension,
