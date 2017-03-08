@@ -1,6 +1,5 @@
 ## NN Architecture
-1. cmd-line flag for max_headline_len / max_body_len
-2. Experiment: add layers, non-linearities
+1. Experiment: add layers, non-linearities
 
 ## Features
 1. Remove stop-words, weight word vectors by TF-IDF

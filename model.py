@@ -14,6 +14,10 @@ class Model(object):
     computational graphs. Each algorithm you will construct in this homework will
     inherit from a Model object.
     """
+    def __init__(self, verbose=False):
+        self.verbose = verbose
+
+
     def add_placeholders(self):
         """Adds placeholder variables to tensorflow computational graph.
 
@@ -192,6 +196,18 @@ class Model(object):
 
 
     def run_epoch(self, sess, train_examples, dev_examples):
+        def eval_helper(sess, examples):
+            token_cm, entity_scores, ratios = self.evaluate(sess,
+                examples)
+            logger.debug("Token-level confusion matrix:\n" +
+                token_cm.as_table())
+            logger.debug("Token-level scores:\n" + token_cm.summary())
+            logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
+            logger.info("FNC Score: %.2f", ratios[1])
+            logger.info("Unrelated Score: %.2f", ratios[0])
+            fnc_score = ratios[1]
+            return fnc_score
+
         prog = Progbar(target=1 + int(len(train_examples) /
             self.config.batch_size))
         for i, batch in enumerate(minibatches(train_examples,
@@ -200,22 +216,13 @@ class Model(object):
             prog.update(i + 1, [("train loss", loss)])
         print("")
 
-        #logger.info("Evaluating on training data")
-        #token_cm, entity_scores = self.evaluate(sess, train_examples, train_examples_raw)
-        #logger.debug("Token-level confusion matrix:\n" + token_cm.as_table())
-        #logger.debug("Token-level scores:\n" + token_cm.summary())
-        #logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
+        if self.verbose:
+            logger.info("Evaluating on training data")
+            eval_helper(sess, train_examples)
 
         logger.info("Evaluating on development data")
-        token_cm, entity_scores, ratios = self.evaluate(sess, dev_examples)
-        logger.debug("Token-level confusion matrix:\n" + token_cm.as_table())
-        logger.debug("Token-level scores:\n" + token_cm.summary())
-        logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
-        logger.info("FNC Score: %.2f", ratios[1])
-        logger.info("Unrelated Score: %.2f", ratios[0])
-
-        f1 = entity_scores[-1]
-        return f1
+        fnc_score = eval_helper(sess, dev_examples)
+        return fnc_score
         
 
 
@@ -228,7 +235,8 @@ class Model(object):
             if score > best_score:
                 best_score = score
                 if saver:
-                    logger.info("New best score! Saving model in %s", self.config.model_output)
+                    logger.info("New best score! Saving model in %s",
+                        self.config.model_output)
                     saver.save(sess, self.config.model_output)
             print("")
         return best_score

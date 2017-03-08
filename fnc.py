@@ -23,7 +23,7 @@ from model import Model
 
 logger = logging.getLogger("baseline_model")
 logger.setLevel(logging.DEBUG)
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format="%(levelname)s:%(message)s", level=logging.DEBUG)
 
 
 class Config:
@@ -281,8 +281,8 @@ class FNCModel(Model):
 
 
     def __init__(self, config, max_headline_len, max_body_len,
-        pretrained_embeddings):
-        super(FNCModel, self).__init__()
+        pretrained_embeddings, verbose):
+        super(FNCModel, self).__init__(verbose=verbose)
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
         self.max_headline_len = max_headline_len
@@ -301,7 +301,7 @@ class FNCModel(Model):
 
 
 def do_train(train_bodies, train_stances, dimension, embedding_path, config,
-    max_headline_len=None, max_body_len=None):
+    max_headline_len=None, max_body_len=None, verbose=False):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances)
@@ -345,7 +345,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     with tf.Graph().as_default():
         logger.info("Building model...",)
         start = time.time()
-        model = FNCModel(config, max_headline_len, max_body_len, embeddings)
+        model = FNCModel(config, max_headline_len, max_body_len, embeddings,
+            verbose)
         logger.info("took %.2f seconds", time.time() - start)
 
         init = tf.global_variables_initializer()
@@ -382,23 +383,31 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Trains and tests FNCModel")
     subparsers = parser.add_subparsers()
 
-    command_parser = subparsers.add_parser('train', help='')
-    command_parser.add_argument('-tb', '--train-bodies',
-        type=argparse.FileType('r'), default="fnc-1-data/train_bodies.csv",
+    command_parser = subparsers.add_parser("train", help="")
+    command_parser.add_argument("-tb", "--train-bodies",
+        type=argparse.FileType("r"), default="fnc-1-data/train_bodies.csv",
         help="Training data")
-    command_parser.add_argument('-ts',
-        '--train-stances', type=argparse.FileType('r'),
+    command_parser.add_argument("-ts",
+        "--train-stances", type=argparse.FileType("r"),
         default="fnc-1-data/train_stances.csv", help="Training data")
-    command_parser.add_argument('-d', '--dimension', type=int,
+    command_parser.add_argument("-d", "--dimension", type=int,
         default=50, help="Dimension of pretrained word vectors")
-    command_parser.add_argument('-hd', '--hidden_size', type=int,
+    command_parser.add_argument("-mhl", "--max_headline_len", type=int,
+        default=None, help="maximum number of words per headline; if None, "
+        "inferred from training data")
+    command_parser.add_argument("-mbl", "--max_body_len", type=int,
+        default=None, help="maximum number of words per body; if None, "
+        "inferred from training data")
+    command_parser.add_argument("-hd", "--hidden_size", type=int,
         default=50, help="Dimension of hidden represntation")
-    command_parser.add_argument('-m', '--method', type=str,
+    command_parser.add_argument("-m", "--method", type=str,
         default="bag_of_words", help="Input embedding method")
-    command_parser.add_argument('-ti', '--train_inputs', action='store_true',
+    command_parser.add_argument("-ti", "--train_inputs", action="store_true",
         default=False)
-    command_parser.add_argument('-b', '--batch_size', type=int,
+    command_parser.add_argument("-b", "--batch_size", type=int,
         default=52)
+    command_parser.add_argument("-v", "--verbose", action="store_true",
+        default=False)
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
@@ -413,4 +422,7 @@ if __name__ == "__main__":
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
             dimension=ARGS.dimension,
-            embedding_path=embedding_path, config=config)
+            embedding_path=embedding_path, config=config,
+            max_headline_len=ARGS.max_headline_len,
+            max_body_len=ARGS.max_body_len,
+            verbose=ARGS.verbose)
