@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-RNN adapted from Assignment 3 Q2
+Model for the FNC.
 """
 
 from __future__ import absolute_import
@@ -19,7 +19,6 @@ import numpy as np
 
 import util
 from model import Model
-from rnn_cell import RNNCell
 
 
 logger = logging.getLogger("baseline_model")
@@ -61,7 +60,7 @@ class Config:
         self.log_output = self.output_path + "log"
 
 
-class RNNModel(Model):
+class FNCModel(Model):
     """
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
@@ -175,37 +174,7 @@ class RNNModel(Model):
 
 
     def add_hidden_op(self, input_type, scope):
-        """Adds the unrolled RNN:
-            h_0 = 0
-            for t in 1 to T:
-                o_t, h_t = cell(x_t, h_{t-1})
-                o_drop_t = Dropout(o_t, dropout_rate)
-                y_t = o_drop_t U + b_2
-
-        TODO: There a quite a few things you'll need to do in this function:
-            - Define the variables U, b_2.
-            - Define the vector h as a constant and inititalize it with
-              zeros. See tf.zeros and tf.shape for information on how
-              to initialize this variable to be of the right shape.
-            - In a for loop, begin to unroll the RNN sequence. Collect
-              the predictions in a list.
-            - When unrolling the loop, from the second iteration
-              onwards, you will HAVE to call
-              tf.get_variable_scope().reuse_variables() so that you do
-              not create new variables in the RNN cell.
-            - Concatenate and reshape the predictions into a predictions
-              tensor.
-        Hint: You will find the function tf.pack (similar to np.asarray)
-              useful to assemble a list of tensors into a larger tensor.
-        Hint: You will find the function tf.transpose and the perms
-              argument useful to shuffle the indices of the tensor.
-
-        Remember:
-            * Use the xavier initilization for matrices.
-            * Note that tf.nn.dropout takes the keep probability
-              (1 - p_drop) as an argument. The keep probability should be set
-              to the value of self.dropout_placeholder
-
+        """
         Args:
             input_type : str, one of 'headlines' or 'bodies'
             scope : scope for variables
@@ -313,7 +282,7 @@ class RNNModel(Model):
 
     def __init__(self, config, max_headline_len, max_body_len,
         pretrained_embeddings):
-        # super(RNNModel, self).__init__(config, report)
+        super(FNCModel, self).__init__()
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
         self.max_headline_len = max_headline_len
@@ -376,7 +345,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     with tf.Graph().as_default():
         logger.info("Building model...",)
         start = time.time()
-        model = RNNModel(config, max_headline_len, max_body_len, embeddings)
+        model = FNCModel(config, max_headline_len, max_body_len, embeddings)
         logger.info("took %.2f seconds", time.time() - start)
 
         init = tf.global_variables_initializer()
@@ -410,7 +379,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 # evaluation of results / etc etc
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Trains and tests RNN model')
+    parser = argparse.ArgumentParser(description="Trains and tests FNCModel")
     subparsers = parser.add_subparsers()
 
     command_parser = subparsers.add_parser('train', help='')
