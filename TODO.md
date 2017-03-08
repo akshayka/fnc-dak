@@ -1,3 +1,7 @@
+## NN Architecture
+1. cmd-line flag for max_headline_len / max_body_len
+2. Experiment: add layers, non-linearities
+
 ## Features
 1. Remove stop-words, weight word vectors by TF-IDF
 2. Experiment: Larger dimensional word vectors.
@@ -16,6 +20,11 @@
 1. Experiment: tune batch size
 2. Experiment: tune learning rate
 3. Experiment: change optimizer
+4. Experiment: add regularization
+5. Experiment: add dropout 
+
+## Evaluation
+1. Print training error (after N epochs)
 
 ## Debugging
 1. Verify that the data is correctly split into training and development
