@@ -36,7 +36,7 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        train_inputs=False, embed_size=50, hidden_sizes=[50], layers=1,
+        train_inputs=False, embed_size=50, hidden_sizes=[50], dropout=0.2,
         batch_size=52, unweighted_loss=True, n_epochs=10, lr=0.001,
         output_path=None):
         self.n_features = n_features
@@ -45,7 +45,8 @@ class Config:
         self.train_inputs = train_inputs
         self.embed_size = embed_size
         self.hidden_sizes = hidden_sizes
-        self.layers = layers
+        self.layers = len(self.hidden_sizes)
+        self.dropout = dropout
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
         self.n_epochs = n_epochs
@@ -207,6 +208,9 @@ class FNCModel(Model):
                 # TODO(akshayka): Add identity initializer for weight matrix
                 cell = tf.nn.rnn_cell.LSTM(
                     num_units=self.config.hidden_sizes[0])
+            if self.config.dropout > 0:
+                cell = tf.nn.rnn_cell.DropoutWrapper(cell=cell,
+                    output_keep_prob=(1-self.config.dropout))
             outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=x,
                 sequence_length=seqlen, dtype=tf.float32, scope=scope)
         elif self.config.method == "bag_of_words":
@@ -407,6 +411,7 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers()
 
     command_parser = subparsers.add_parser("train", help="")
+    # ------------------------ Input Data ------------------------
     command_parser.add_argument("-tb", "--train_bodies",
         type=argparse.FileType("r"), default="fnc-1-data/train_bodies.csv",
         help="Training data")
@@ -415,6 +420,7 @@ if __name__ == "__main__":
         default="fnc-1-data/train_stances.csv", help="Training data")
     command_parser.add_argument("-d", "--dimension", type=int,
         default=50, help="Dimension of pretrained word vectors")
+    # ------------------------ NN Architecture ------------------------
     command_parser.add_argument("-mhl", "--max_headline_len", type=int,
         default=None, help="maximum number of words per headline; if None, "
         "inferred from training data")
@@ -426,12 +432,15 @@ if __name__ == "__main__":
     command_parser.add_argument("-m", "--method", type=str,
         default="bag_of_words", help="Input embedding method; one of %s" %
         pprint.pformat(FNCModel.SUPPORTED_METHODS))
+    # ------------------------ Optimization Settings ------------------------
+    command_parser.add_argument("-dp", "--dropout", type=float, default=0.2)
     command_parser.add_argument("-ti", "--train_inputs", action="store_true",
         default=False)
     command_parser.add_argument("-b", "--batch_size", type=int,
         default=52)
     command_parser.add_argument("-ul", "--unweighted_loss",
         action="store_true", default=False)
+    # ------------------------ Output Settings ------------------------
     command_parser.add_argument("-v", "--verbose", action="store_true",
         default=False)
     command_parser.set_defaults(func=do_train)
@@ -446,7 +455,7 @@ if __name__ == "__main__":
     else:
         config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
             embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
-            layers=layers, unweighted_loss=ARGS.unweighted_loss,
+            dropout=ARGS.dropout, unweighted_loss=ARGS.unweighted_loss,
             batch_size=ARGS.batch_size)
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
