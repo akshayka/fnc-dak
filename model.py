@@ -111,7 +111,7 @@ class Model(object):
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
         feed = self.create_feed_dict(headlines_batch, bodies_batch)
-        predictions = sess.run(tf.argmax(self.pred, axis=1), feed_dict=feed)
+        predictions = sess.run(self.argmax_pred, feed_dict=feed)
         return predictions
 
 
@@ -152,15 +152,28 @@ class Model(object):
 
         correct_guessed_related, total_gold_related, total_guessed_related = (
             0., 0., 0.)
-        _, labels, labels_ = self.output(sess, examples)
-        for l, l_ in zip(labels, labels_):
-            token_cm.update(l, l_)
-            if l == l_ and l in RELATED:
+        _, labels, labels_hat = self.output(sess, examples)
+        score = 0
+        num_unrelated = len([l for l in labels if l == UNRELATED])
+        num_related = len(labels) - num_unrelated
+        unrelated_score = 0.25 * num_unrelated
+        max_score = unrelated_score + 1.0 * num_related
+        for l, l_hat in zip(labels, labels_hat):
+            token_cm.update(l, l_hat)
+            if l == l_hat:
+                score += 0.25
+                if l != UNRELATED:
+                    score += 0.5
+            if l in RELATED and l_hat in RELATED:
+                score += 0.25
+
+            if l == l_hat and l in RELATED:
                 correct_guessed_related += 1
             if l in RELATED:
                 total_gold_related += 1
-            if l_ in RELATED:
+            if l_hat in RELATED:
                 total_guessed_related += 1
+
 
         p = correct_guessed_related / total_guessed_related if \
             total_guessed_related > 0 else 0
@@ -172,7 +185,10 @@ class Model(object):
         if total_gold_related == 0:
             logging.warn("total_gold_related == 0!")
         f1 = 2 * p * r / (p + r) if p + r > 0 else 0
-        return token_cm, (p, r, f1)
+
+        unrelated_ratio = unrelated_score / max_score
+        score_ratio = score / max_score
+        return token_cm, (p, r, f1), (unrelated_ratio, score_ratio)
 
 
     def run_epoch(self, sess, train_examples, dev_examples):
@@ -191,10 +207,12 @@ class Model(object):
         #logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
 
         logger.info("Evaluating on development data")
-        token_cm, entity_scores = self.evaluate(sess, dev_examples)
+        token_cm, entity_scores, ratios = self.evaluate(sess, dev_examples)
         logger.debug("Token-level confusion matrix:\n" + token_cm.as_table())
         logger.debug("Token-level scores:\n" + token_cm.summary())
         logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
+        logger.info("FNC Score: %.2f", ratios[1])
+        logger.info("Unrelated Score: %.2f", ratios[0])
 
         f1 = entity_scores[-1]
         return f1
@@ -219,5 +237,6 @@ class Model(object):
     def build(self):
         self.add_placeholders()
         self.pred = self.add_prediction_op()
+        self.argmax_pred = tf.argmax(self.pred, axis=1)
         self.loss = self.add_loss_op(self.pred)
         self.train_op = self.add_training_op(self.loss)

@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import time
+import random
 import sys
 
 import numpy as np
@@ -91,7 +92,7 @@ class ConfusionMatrix(object):
             acc = (tp + tn)/(tp + tn + fp + fn) if tp > 0  else 0
             prec = (tp)/(tp + fp) if tp > 0  else 0
             rec = (tp)/(tp + fn) if tp > 0  else 0
-            f1 = 2 * prec * rec / (prec + rec) if tp > 0  else 0
+            f1 = 2 * prec * rec / (prec + rec) if prec + rec > 0  else 0
 
             # update micro/macro averages
             micro += np.array([tp, fp, tn, fn])
@@ -350,10 +351,10 @@ def read_stances(fstream):
     body_ids = []
     stances = []
     for row in csv_reader:
+        headlines.append(tokenize_text(row[0]))
+        body_ids.append(int(row[1]))
         stance = row[2]
         if stance == "unrelated":
-            # TODO(akshayka) HACK HACK
-            #continue
             stances.append(UNRELATED)
         elif stance == "discuss":
             stances.append(DISCUSS)
@@ -363,8 +364,6 @@ def read_stances(fstream):
             stances.append(AGREE)
         else:
             raise ValueError("Unknown stance %s" % stance)
-        headlines.append(tokenize_text(row[0]))
-        body_ids.append(int(row[1]))
     return [headlines, body_ids, stances]
 
 
@@ -377,48 +376,53 @@ def read_bodies(fstream):
     """
     fstream.readline() # read past the header
     csv_reader = csv.reader(fstream)
-    body_map = {int(row[0]) : row[1] for row in csv_reader} 
-    for body_id in body_map:
-        body_map[body_id] = tokenize_text(body_map[body_id])
+    body_map = {int(row[0]) : tokenize_text(row[1]) for row in csv_reader} 
     return body_map
 
 
 def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     train_test_split=0.7):
-    bodies = read_bodies(train_bodies_fstream)
     stances = read_stances(train_stances_fstream)
     body_ids = stances[1]
-    for i, body_id in enumerate(body_ids):
-        body_ids[i] = bodies[body_id]
+    unique_body_ids = list(set(body_ids))
+    random.shuffle(unique_body_ids)
+
+    # Ensure that the set of bodies present in the training data is
+    # disjoint from the set of bodies present in the test data
+    num_examples = len(stances[0])
+    split = int(train_test_split * len(unique_body_ids))
+    train_body_ids = set(unique_body_ids[:split])
+    train_indices = [i for i, body_id in \
+        enumerate(body_ids) if body_id in train_body_ids]
+    set_train = set(train_indices)
+    test_indices = [i for i in range(num_examples) if i not in set_train]
+    assert len(set_train.intersection(set(test_indices))) == 0
+
+    # Overwrite body_ids with the body text
+    body_map = read_bodies(train_bodies_fstream)
+    text_bodies = [body_map[body_id] for body_id in body_ids]
+    stances[1] = text_bodies
     fnc_data = FNCData(
         headlines=stances[0], bodies=stances[1], stances=stances[2],
         max_headline_len=0, max_body_len=0)
 
-    # Populate training data
-    num_examples = len(fnc_data.headlines)
-    train_indices = np.random.choice(np.arange(num_examples), 
-        size=int(train_test_split * num_examples), replace=False)
-
-    train_headlines = [fnc_data.headlines[idx] for idx in train_indices]
+    # Populate training data from train_indices
+    train_headlines = [fnc_data.headlines[i] for i in train_indices]
+    train_bodies = [fnc_data.bodies[i] for i in train_indices]
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
-
-    train_bodies = [fnc_data.bodies[idx] for idx in train_indices]
     body_lens = [len(body) for body in train_bodies]
     max_body_len = max(body_lens)
-
     fnc_data_train = FNCData(
         headlines=train_headlines, bodies=train_bodies,
-        stances=[fnc_data.stances[idx] for idx in train_indices],
+        stances=[fnc_data.stances[i] for i in train_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
-    # Populate test data
-    test_indices = [idx for idx in np.arange(num_examples) \
-        if idx not in train_indices]
+    # Populate test data from test_indices
     fnc_data_test = FNCData(
-        headlines=[fnc_data.headlines[idx] for idx in test_indices],
-        bodies=[fnc_data.bodies[idx] for idx in test_indices],
-        stances=[fnc_data.stances[idx] for idx in test_indices],
+        headlines=[fnc_data.headlines[i] for i in test_indices],
+        bodies=[fnc_data.bodies[i] for i in test_indices],
+        stances=[fnc_data.stances[i] for i in test_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
     return fnc_data, fnc_data_train, fnc_data_test
