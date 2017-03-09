@@ -221,7 +221,9 @@ class FNCModel(Model):
         elif self.config.method == "bag_of_words":
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
-            shape = (inputs_shape[0], inputs_shape[2], inputs_shape[2]),
+            # TODO(akshayka): What about the last batch, which might have
+            # fewer than self.config.batch_size examples?
+            shape = (self.config.batch_size, inputs_shape[2], inputs_shape[2])
             # Transformation layers
             for layer in range(self.config.layers)[:-1]:
                 local_scope = scope + "/layer" + str(layer)
@@ -230,7 +232,7 @@ class FNCModel(Model):
                     relu_input = tf.matmul(inputs, U)
                     if self.config.dropout > 0:
                         relu_input = tf.nn.dropout(relu_input,
-                            keep_prop=(1-self.config.dropout))
+                            keep_prob=(1-self.config.dropout))
                     inputs = tf.nn.relu(relu_input)
             seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
             mean = tf.divide(tf.reduce_sum(input_tensor=inputs, axis=1),
@@ -242,7 +244,7 @@ class FNCModel(Model):
                 relu_input = tf.matmul(mean, U)
                 if self.config.dropout > 0:
                     relu_input = tf.nn.dropout(relu_input,
-                        keep_prop=(1-self.config.dropout))
+                        keep_prob=(1-self.config.dropout))
                 h = tf.nn.relu(relu_input)
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
