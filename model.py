@@ -22,12 +22,9 @@ class Model(object):
         """Adds placeholder variables to tensorflow computational graph.
 
         Tensorflow uses placeholder variables to represent locations in a
-        computational graph where data is inserted.  These placeholders are used as
-        inputs by the rest of the model building and will be fed data during
-        training.
-
-        See for more information:
-        https://www.tensorflow.org/versions/r0.7/api_docs/python/io_ops.html#placeholders
+        computational graph where data is inserted.  These placeholders are
+        used as inputs by the rest of the model building and will be fed data
+        during training.
         """
         raise NotImplementedError("Each Model must re-implement this method.")
 
@@ -53,7 +50,7 @@ class Model(object):
         raise NotImplementedError("Each Model must re-implement this method.")
 
     def add_prediction_op(self):
-        """Implements the core of the model that transforms a batch of input data into predictions.
+        """Transforms a batch of input data into predictions.
 
         Returns:
             pred: A tensor of shape (batch_size, n_classes)
@@ -76,10 +73,6 @@ class Model(object):
         Creates an optimizer and applies the gradients to all trainable variables.
         The Op returned by this function is what must be passed to the
         sess.run() to train the model. See
-
-        https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
-
-        for more information.
 
         Args:
             loss: Loss tensor (a scalar).

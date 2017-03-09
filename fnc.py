@@ -221,19 +221,22 @@ class FNCModel(Model):
         elif self.config.method == "bag_of_words":
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
-            # TODO(akshayka): What about the last batch, which might have
-            # fewer than self.config.batch_size examples?
-            shape = (self.config.batch_size, inputs_shape[2], inputs_shape[2])
             # Transformation layers
-            for layer in range(self.config.layers)[:-1]:
-                local_scope = scope + "/layer" + str(layer)
-                with tf.variable_scope(local_scope):
-                    U = tf.get_variable("U", shape=shape, initializer=xav)
-                    relu_input = tf.matmul(inputs, U)
-                    if self.config.dropout > 0:
-                        relu_input = tf.nn.dropout(relu_input,
-                            keep_prob=(1-self.config.dropout))
-                    inputs = tf.nn.relu(relu_input)
+            if self.config.layers > 1:
+                inputs = tf.reshape(inputs, (-1, inputs_shape[2]))
+                for layer in range(self.config.layers)[:-1]:
+                    local_scope = scope + "/layer" + str(layer)
+                    with tf.variable_scope(local_scope):
+                        U = tf.get_variable("U",
+                            shape=(inputs_shape[2], inputs_shape[2]),
+                            initializer=xav)
+                        relu_input = tf.matmul(inputs, U)
+                        if self.config.dropout > 0:
+                            relu_input = tf.nn.dropout(relu_input,
+                                keep_prob=(1-self.config.dropout))
+                        inputs = tf.nn.relu(relu_input)
+                inputs = tf.reshape(inputs,
+                    (-1, inputs_shape[1], inputs_shape[2]))
             seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
             mean = tf.divide(tf.reduce_sum(input_tensor=inputs, axis=1),
                 seqlen_scale)
@@ -314,11 +317,7 @@ class FNCModel(Model):
 
         Creates an optimizer and applies the gradients to all trainable variables.
         The Op returned by this function is what must be passed to the
-        `sess.run()` call to cause the model to train. See
-
-        https://www.tensorflow.org/versions/r0.7/api_docs/python/train.html#Optimizer
-
-        for more information.
+        `sess.run()` call to cause the model to train.
 
         Use tf.train.AdamOptimizer for this model.
         Calling optimizer.minimize() will return a train_op object.
@@ -405,29 +404,27 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
-
         with tf.Session() as session:
             session.run(init)
             logging.info('Fitting ...')
             model.fit(session, saver, training_data, dev_data)
-            # Save predictions in a text file.
             logging.info('Outputting ...')
             output = model.output(session, dev_data)
-            # TODO(akshayka): Pickle output
-            headlines, bodies = output[0]
-            indices_to_words = {word_indices[w] : w for w in word_indices}
-            headlines = [' '.join(
-                util.word_indices_to_words(h, indices_to_words))
-                for h in headlines]
-            bodies = [' '.join(
-                util.word_indices_to_words(b, indices_to_words))
-                for b in bodies]
-            output = zip(headlines, bodies, output[1], output[2])
 
-            with open(model.config.eval_output, 'w') as f:
-                for headline, body, label, prediction in output:
-                    f.write("%s\t%s\tgold:%d\tpred:%d" % (
-                        headline, body, label, prediction))
+    headlines, bodies = output[0]
+    indices_to_words = {word_indices[w] : w for w in word_indices}
+    headlines = [' '.join(
+        util.word_indices_to_words(h, indices_to_words))
+        for h in headlines]
+    bodies = [' '.join(
+        util.word_indices_to_words(b, indices_to_words))
+        for b in bodies]
+    output = zip(headlines, bodies, output[1], output[2])
+
+    with open(model.config.eval_output, 'w') as f:
+        for headline, body, label, prediction in output:
+            f.write("%s\t%s\tgold:%d\tpred:%d" % (
+                headline, body, label, prediction))
 
 
 # TODO(akshayka): Plotting code (loss / gradient size ... ) /
