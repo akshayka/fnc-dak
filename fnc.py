@@ -36,7 +36,7 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        train_inputs=False, embed_size=50, hidden_sizes=[50], dropout=0.2,
+        train_inputs=False, embed_size=50, hidden_sizes=[50], dropout=0.0,
         batch_size=52, unweighted_loss=True, n_epochs=10, lr=0.001,
         output_path=None):
         self.n_features = n_features
@@ -200,12 +200,12 @@ class FNCModel(Model):
         if self.config.method in ["rnn", "gru", "lstm"]:
             inputs = x
             if self.config.method == "rnn":
-                cell_type = tf.nn.rnn_cell.BasicRNNCell
+                cell_type = tf.contrib.rnn.BasicRNNCell
             elif self.config.method == "gru":
-                cell_type = tf.nn.rnn_cell.GRUCell
+                cell_type = tf.contrib.rnn.GRUCell
             elif self.config.method == "lstm":
                 # TODO(akshayka): Add identity initializer for weight matrix
-                cell_type = tf.nn.rnn_cell.LSTM
+                cell_type = tf.contrib.rnn.LSTM
             for layer, hsz in enumerate(self.config.hidden_sizes):
                 cell = cell_type(num_units=hsz)
                 if self.config.dropout > 0:
@@ -220,20 +220,30 @@ class FNCModel(Model):
                 seqlen = sequence_length(inputs)
         elif self.config.method == "bag_of_words":
             inputs = x
-            shape = (tf.shape(inputs)[0], tf.shape(inputs)[2],
-                tf.shape(inputs)[2])
+            inputs_shape = inputs.get_shape().as_list()
+            shape = (inputs_shape[0], inputs_shape[2], inputs_shape[2]),
+            # Transformation layers
             for layer in range(self.config.layers)[:-1]:
                 local_scope = scope + "/layer" + str(layer)
                 with tf.variable_scope(local_scope):
                     U = tf.get_variable("U", shape=shape, initializer=xav)
-                    inputs = tf.nn.relu(tf.matmul(inputs, U))
+                    relu_input = tf.matmul(inputs, U)
+                    if self.config.dropout > 0:
+                        relu_input = tf.nn.dropout(relu_input,
+                            keep_prop=(1-self.config.dropout))
+                    inputs = tf.nn.relu(relu_input)
             seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
             mean = tf.divide(tf.reduce_sum(input_tensor=inputs, axis=1),
                 seqlen_scale)
+            # Average layer
             with tf.variable_scope(scope + "/transform_mean"):
-                U = tf.get_variable("U", shape=(tf.shape(inputs)[2],
+                U = tf.get_variable("U", shape=(inputs.get_shape().as_list()[2],
                     self.config.hidden_sizes[-1]), initializer=xav)
-                h = tf.nn.relu(tf.matmul(mean, U))
+                relu_input = tf.matmul(mean, U)
+                if self.config.dropout > 0:
+                    relu_input = tf.nn.dropout(relu_input,
+                        keep_prop=(1-self.config.dropout))
+                h = tf.nn.relu(relu_input)
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
 
@@ -257,7 +267,7 @@ class FNCModel(Model):
             scope=self.headline_scope)
         body_hidden = self.add_hidden_op(input_type='bodies',
             scope=self.body_scope)
-        pred_input = tf.concat(1, [headline_hidden, body_hidden])
+        pred_input = tf.concat(axis=1, values=[headline_hidden, body_hidden])
 
         with tf.variable_scope("prediction_op"):
            W = tf.get_variable("W", (2 * self.config.hidden_sizes[-1],
@@ -286,7 +296,7 @@ class FNCModel(Model):
             unrelated_mask = tf.abs(related_mask - 1)
             # weight_per_label[i] == 0.25 if labels[i] == 0, 1 otherwise
             weight_per_label = related_mask + 0.25 * unrelated_mask
-            xent = tf.mul(weight_per_label,
+            xent = tf.multiply(weight_per_label,
                 tf.nn.sparse_softmax_cross_entropy_with_logits(
                     logits=preds,
                     labels=self.labels_placeholder))
@@ -351,6 +361,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         max_headline_len = fnc_data_train.max_headline_len
     if max_body_len is None:
         max_body_len = fnc_data_train.max_body_len
+    logging.info("Max headline length: %d", max_headline_len)
+    logging.info("Max body length: %d", max_body_len)
 
     # For convenience, create the word indices map over the entire dataset
     logging.info("Building word-to-index map ...")
@@ -447,7 +459,7 @@ if __name__ == "__main__":
         default="bag_of_words", help="Input embedding method; one of %s" %
         pprint.pformat(FNCModel.SUPPORTED_METHODS))
     # ------------------------ Optimization Settings ------------------------
-    command_parser.add_argument("-dp", "--dropout", type=float, default=0.2,
+    command_parser.add_argument("-dp", "--dropout", type=float, default=0.0,
         help="Dropout probability")
     command_parser.add_argument("-ti", "--train_inputs", action="store_true",
         default=False, help="Include in order to train embeddings")
@@ -473,6 +485,7 @@ if __name__ == "__main__":
             embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
             dropout=ARGS.dropout, unweighted_loss=ARGS.unweighted_loss,
             batch_size=ARGS.batch_size)
+        logging.info("Configuration: %s", pprint.pformat(config.__dict__))
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
             dimension=ARGS.dimension,
