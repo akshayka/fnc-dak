@@ -92,7 +92,7 @@ class Model(object):
         Returns:
             loss: loss over the batch (a scalar)
         """
-        feed = self.create_feed_dict(headlines_batch, bodies_batch,
+        feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch,
             labels_batch=labels_batch)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
@@ -107,7 +107,7 @@ class Model(object):
         Returns:
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
-        feed = self.create_feed_dict(headlines_batch, bodies_batch)
+        feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch)
         predictions = sess.run(self.argmax_pred, feed_dict=feed)
         return predictions
 
@@ -223,6 +223,7 @@ class Model(object):
         best_score = 0.
 
         for epoch in range(self.config.n_epochs):
+            self.epoch = epoch
             logger.info("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
             score = self.run_epoch(sess, train_examples, dev_examples)
             if score > best_score:

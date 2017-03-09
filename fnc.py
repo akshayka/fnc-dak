@@ -36,13 +36,14 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        train_inputs=False, embed_size=50, hidden_sizes=[50], dropout=0.0,
-        batch_size=52, unweighted_loss=True, n_epochs=10, lr=0.001,
+        embed_size=50, hidden_sizes=[50], dropout=0.0,
+        batch_size=52, unweighted_loss=True, n_epochs=10,
+        train_embeddings_epoch=10, lr=0.001,
         output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
-        self.train_inputs = train_inputs
+        self.train_embeddings_epoch = train_embeddings_epoch
         self.embed_size = embed_size
         self.hidden_sizes = hidden_sizes
         self.layers = len(self.hidden_sizes)
@@ -55,11 +56,10 @@ class Config:
             # Where to save things.
             self.output_path = output_path
         else:
-            ti_str = "_ti" if self.train_inputs else ""
             self.output_path = \
-                "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}{:}/".format(
+                "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}_te_{:}/".format(
                 datetime.now(), self.embed_size, self.layers, self.method,
-                ti_str)
+                train_embeddings_epoch)
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
@@ -90,17 +90,18 @@ class FNCModel(Model):
 
             self.inputs_placeholder
             self.labels_placeholder
-            self.dropout_placeholder
         """
         self.headlines_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_headline_len, self.config.n_features))
         self.bodies_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_body_len, self.config.n_features))
+        self.epoch_placeholder = tf.placeholder(tf.int32)
         self.labels_placeholder = tf.placeholder(tf.int32,
             shape=(None))
 
 
-    def create_feed_dict(self, headlines_batch, bodies_batch, labels_batch=None):
+    def create_feed_dict(self, headlines_batch, bodies_batch, epoch,
+        labels_batch=None):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -115,17 +116,17 @@ class FNCModel(Model):
         Hint: When an argument is None, don't add it to the feed_dict.
 
         Args:
-            inputs_batch: A batch of input data.
+            headlines_batch: A batch of headlines.
+            bodies_batch: A batch of input bodies.
+            epoch: The current epoch.
             labels_batch: A batch of label data.
-            dropout: The dropout rate.
         Returns:
             feed_dict: The feed dictionary mapping from placeholders to values.
         """
         feed_dict = {}
-        if headlines_batch is not None:
-            feed_dict[self.headlines_placeholder] = headlines_batch
-        if bodies_batch is not None:
-            feed_dict[self.bodies_placeholder] = bodies_batch
+        feed_dict[self.headlines_placeholder] = headlines_batch
+        feed_dict[self.bodies_placeholder] = bodies_batch
+        feed_dict[self.epoch_placeholder] = epoch
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
         return feed_dict
@@ -143,26 +144,24 @@ class FNCModel(Model):
             - Concatenates the embeddings by reshaping the embeddings
               tensor to shape (None, max_length, n_features * embed_size).
 
-        HINTS:
-            - You might find tf.nn.embedding_lookup useful.
-            - You can use tf.reshape to concatenate the vectors.
-
         Args:
             input_type : str, one of 'headlines' or 'bodies'
         Returns:
             embeddings: tf.Tensor of shape
                         (None, max_length, n_features*embed_size)
         """
-        # TODO(akshayka): Train embeddings after N iterations
-        if not self.config.train_inputs:
-            embeddings = tf.constant(self.pretrained_embeddings,
-                dtype=tf.float32)
-        else:
+        def constant_embeddings():
+            return tf.constant(self.pretrained_embeddings, dtype=tf.float32)
+        def variable_embeddings(scope):
             with tf.variable_scope(scope):
-                embeddings = tf.get_variable("embeddings",
+                return tf.get_variable("embeddings",
                     shape=np.shape(self.pretrained_embeddings),
                     initializer=tf.constant_initializer(
-                        self.pretrained_embeddings), dtype=tf.float32)
+                        self.pretrained_embeddings),
+                    dtype=tf.float32)
+        embeddings = tf.cond(tf.less(self.epoch_placeholder,
+            self.config.train_embeddings_epoch),
+            lambda: constant_embeddings(), lambda: variable_embeddings(scope))
 
         if input_type == "headlines":
             input_embeddings = tf.nn.embedding_lookup(embeddings,
@@ -187,7 +186,9 @@ class FNCModel(Model):
             scope : scope for variables
 
         Returns:
-            hidden: tf.Tensor of shape (batch_size, self.config.hidden_sizes[-1])
+            hidden: tf.Tensor of shape
+                (None, self.config.hidden_sizes[-1]), where None is the current
+                batch size
         """
         def sequence_length(x):
             used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
@@ -460,8 +461,11 @@ if __name__ == "__main__":
     # ------------------------ Optimization Settings ------------------------
     command_parser.add_argument("-dp", "--dropout", type=float, default=0.0,
         help="Dropout probability")
-    command_parser.add_argument("-ti", "--train_inputs", action="store_true",
-        default=False, help="Include in order to train embeddings")
+    command_parser.add_argument("-e", "--n_epochs", type=int, default=10,
+        help="Number of training epochs.")
+    command_parser.add_argument("-te", "--train_embeddings_epoch", type=int,
+        default=10, help="Start training embeddings from this epoch onwards; "
+        "embeddings are not trained if this argument is >= n_epochs")
     command_parser.add_argument("-b", "--batch_size", type=int,
         default=52, help="The batch size")
     command_parser.add_argument("-ul", "--unweighted_loss",
@@ -480,10 +484,14 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
     else:
-        config = Config(method=ARGS.method, train_inputs=ARGS.train_inputs,
-            embed_size=ARGS.dimension, hidden_sizes=ARGS.hidden_sizes,
-            dropout=ARGS.dropout, unweighted_loss=ARGS.unweighted_loss,
-            batch_size=ARGS.batch_size)
+        config = Config(method=ARGS.method,
+            embed_size=ARGS.dimension,
+            hidden_sizes=ARGS.hidden_sizes,
+            dropout=ARGS.dropout,
+            unweighted_loss=ARGS.unweighted_loss,
+            batch_size=ARGS.batch_size,
+            n_epochs=ARGS.n_epochs,
+            train_embeddings_epoch=ARGS.train_embeddings_epoch)
         logging.info("Configuration: %s", pprint.pformat(config.__dict__))
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
