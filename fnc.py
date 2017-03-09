@@ -46,12 +46,14 @@ class Config:
         self.train_embeddings_epoch = train_embeddings_epoch
         self.embed_size = embed_size
         self.hidden_sizes = hidden_sizes
-        self.layers = len(self.hidden_sizes)
         self.dropout = dropout
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
         self.n_epochs = n_epochs
         self.lr = lr
+
+        self.layers = len(self.hidden_sizes)
+
         if output_path:
             # Where to save things.
             self.output_path = output_path
@@ -199,26 +201,37 @@ class FNCModel(Model):
         seqlen = sequence_length(x)
         xav = tf.contrib.layers.xavier_initializer()
         if self.config.method in ["rnn", "gru", "lstm"]:
+            cells = []
             inputs = x
+            kwargs = {}
             if self.config.method == "rnn":
                 cell_type = tf.contrib.rnn.BasicRNNCell
             elif self.config.method == "gru":
                 cell_type = tf.contrib.rnn.GRUCell
             elif self.config.method == "lstm":
-                # TODO(akshayka): Add identity initializer for weight matrix
-                cell_type = tf.contrib.rnn.LSTM
+                cell_type = tf.contrib.rnn.LSTMCell
+                kwargs["state_is_tuple"] = True
             for layer, hsz in enumerate(self.config.hidden_sizes):
                 cell = cell_type(num_units=hsz)
                 if self.config.dropout > 0:
-                    cell = tf.nn.rnn_cell.DropoutWrapper(cell=cell,
-                        output_keep_prob=(1-self.config.dropout))
-                # TODO(akshayka): Is this correct? Should I instead
-                # set reuse_variables to true?
-                local_scope = scope + "/layer" + str(layer)
-                outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=inputs,
-                    sequence_length=seqlen, dtype=tf.float32, scope=local_scope)
-                inputs = outputs
-                seqlen = sequence_length(inputs)
+                    cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
+                        input_keep_prob=(1-self.config.dropout))
+                cells.append(cell)
+            if layers > 1:
+                cell = tf.contrib.rnn.MultiRNNCell(cells=cells,
+                    state_is_tuple=True)
+            if self.config.dropout > 0:
+                cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
+                    output_keep_prob=(1-self.config.dropout))
+            # TODO(akshayka): How do we declare an initializer?
+            outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=inputs,
+                sequence_length=seqlen, dtype=tf.float32, scope=scope)
+            # if cell is a MultiRNNCell, then h is a tuple of hidden states,
+            # one per layer; else, it is a single hidden state.
+            h = h[-1] if self.config.layers > 1 else h
+            # if each cell is an LSTM cell, then h is a tuple of the form
+            # (state, hidden_state)
+            h = h[1] if self.config.method == "lstm" else h
         elif self.config.method == "bag_of_words":
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
