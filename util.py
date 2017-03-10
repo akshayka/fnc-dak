@@ -284,6 +284,29 @@ def minibatches(data, batch_size, shuffle=True):
 PAD_TOKEN = "___PPPADDD___"
 
 
+# Taken from Arora's code: https://github.com/YingyuLiang/SIF/
+def get_word_weights(weightfile, a=1e-3):
+    if a <=0: # when the parameter makes no sense, use unweighted
+       raise ValueError("a <= 0!")
+
+    word2weight = {}
+    with open(weightfile) as f:
+        lines = f.readlines()
+    N = 0
+    for i in lines:
+        i=i.strip()
+        if(len(i) > 0):
+            i=i.split()
+            if(len(i) == 2):
+                word2weight[i[0]] = float(i[1])
+                N += float(i[1])
+            else:
+                print(i)
+    for key, value in word2weight.iteritems():
+        word2weight[key] = a / (a + value/N)
+    return word2weight
+
+
 def word_indices_to_words(example, indices_to_words):
     # NB: 0 is the padding index
     # TODO(akshayka): HACK -- i is a list of features
@@ -313,9 +336,11 @@ def vectorize(examples, word_indices, known_words, max_len):
 
 
 def load_embeddings(word_indices, dimension=300,
-    embedding_path="glove/glove.6B.300d.txt"):
+    embedding_path="glove/glove.6B.300d.txt", weight_embeddings=False,):
     embeddings = np.zeros([len(word_indices) + 1, dimension])
     glove_words = set([])
+    weights = None if not weight_embeddings else \
+        get_word_weights("aux_data/enwiki_vocab_min200.txt")
     with open(embedding_path, 'rb') as fstream:
         for line in fstream:
             line = line.strip()
@@ -325,13 +350,15 @@ def load_embeddings(word_indices, dimension=300,
             word = row[0]
             if word not in word_indices:
                 continue
-            data = [float(x) for x in row[1:]]
+            data = np.asarray([float(x) for x in row[1:]])
+            if weight_embeddings:
+                data = weights[word] * data
             if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
             # TODO(akshayka): if using arora's embeddings, multiply 
             # each embedding by its word weight
-            embeddings[word_indices[word]] = np.asarray(data)
+            embeddings[word_indices[word]] = data
             glove_words.add(word)
     our_words = set(word_indices.keys())
     # TODO(delenn): account for unseen words (unk token?)

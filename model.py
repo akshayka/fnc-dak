@@ -111,7 +111,7 @@ class Model(object):
         # Do not apply dropout during evaluation!
         feed = self.create_feed_dict(headlines_batch, bodies_batch,
             self.epoch, dropout=0)
-        predictions = sess.run(self.argmax_pred, feed_dict=feed)
+        predictions = sess.run(self.final_pred, feed_dict=feed)
         return predictions
 
 
@@ -225,9 +225,9 @@ class Model(object):
     def fit(self, sess, saver, train_examples, dev_examples):
         best_score = 0.
 
-        for epoch in range(self.config.n_epochs):
+        for epoch in range(1, self.config.n_epochs + 1):
             self.epoch = epoch
-            logger.info("Epoch %d out of %d", epoch + 1, self.config.n_epochs)
+            logger.info("Epoch %d out of %d", self.epoch, self.config.n_epochs)
             score = self.run_epoch(sess, train_examples, dev_examples)
             if score > best_score:
                 best_score = score
@@ -242,6 +242,11 @@ class Model(object):
     def build(self):
         self.add_placeholders()
         self.pred = self.add_prediction_op()
-        self.argmax_pred = tf.argmax(self.pred, axis=1)
+        if self.config.similarity_metric:
+            # TODO(akshayka): Should sim preds be integers?
+            self.final_pred = tf.round(self.pred)
+            self.final_pred = tf.maximum(tf.minimum(self.final_pred, 3), 0)
+        else:
+            self.final_pred = tf.argmax(self.pred, axis=1)
         self.loss = self.add_loss_op(self.pred)
         self.train_op = self.add_training_op(self.loss)
