@@ -419,12 +419,6 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_body_len)
     dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
 
-    handler = logging.FileHandler(config.log_output)
-    handler.setLevel(logging.DEBUG)
-    handler.setFormatter(logging.Formatter(
-       '%(asctime)s:%(levelname)s: %(message)s'))
-    logging.getLogger().addHandler(handler)
-
     with tf.Graph().as_default():
         logger.info("Building model...",)
         start = time.time()
@@ -529,6 +523,12 @@ if __name__ == "__main__":
             batch_size=ARGS.batch_size,
             n_epochs=ARGS.n_epochs,
             train_embeddings_epoch=ARGS.train_embeddings_epoch)
+
+        handler = logging.FileHandler(config.log_output)
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(logging.Formatter(
+           '%(asctime)s:%(levelname)s: %(message)s'))
+        logging.getLogger().addHandler(handler)
         logging.info("Configuration: %s", pprint.pformat(config.__dict__))
         ARGS.func(train_bodies=ARGS.train_bodies,
             train_stances=ARGS.train_stances,
