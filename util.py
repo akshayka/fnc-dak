@@ -9,6 +9,7 @@ import random
 import sys
 
 import numpy as np
+from nltk.corpus import stopwords
 
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
     "max_headline_len", "max_body_len"])
@@ -22,6 +23,8 @@ DISAGREE = 2
 AGREE = 3
 
 RELATED = [DISCUSS, DISAGREE, AGREE]
+
+STOPWORDS = set(stopwords.words('english'))
 
 
 
@@ -339,9 +342,14 @@ def process_corpus(corpus):
     return tokens
 
 
-def tokenize_text(text):
-    return [tok.replace("'", "") for tok in re.findall(TOKEN_RE, text.lower())]
-
+def tokenize_text(text, include_stopwords):
+    if include_stopwords:
+        tokenized = [tok.replace("'", "") for tok in re.findall(TOKEN_RE, 
+            text.lower())]
+    else include_stopwords:
+        tokenized = [tok.replace("'", "") for tok in re.findall(TOKEN_RE, 
+            text.lower()) if tok not in STOPWORDS]
+    return tokenized
 
 def read_stances(fstream):
     """Returns headlines, ids, stances"""
@@ -351,7 +359,7 @@ def read_stances(fstream):
     body_ids = []
     stances = []
     for row in csv_reader:
-        headlines.append(tokenize_text(row[0]))
+        headlines.append(tokenize_text(row[0], include_stopwords))
         body_ids.append(int(row[1]))
         stance = row[2]
         if stance == "unrelated":
@@ -376,13 +384,13 @@ def read_bodies(fstream):
     """
     fstream.readline() # read past the header
     csv_reader = csv.reader(fstream)
-    body_map = {int(row[0]) : tokenize_text(row[1]) for row in csv_reader} 
+    body_map = {int(row[0]) : tokenize_text(row[1], include_stopwords) for row in csv_reader} 
     return body_map
 
 
-def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
-    train_test_split=0.7):
-    stances = read_stances(train_stances_fstream)
+def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream, 
+    include_stopwords, train_test_split=0.7):
+    stances = read_stances(train_stances_fstream, include_stopwords)
     body_ids = stances[1]
     unique_body_ids = list(set(body_ids))
     random.shuffle(unique_body_ids)
@@ -399,7 +407,7 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     assert len(set_train.intersection(set(test_indices))) == 0
 
     # Overwrite body_ids with the body text
-    body_map = read_bodies(train_bodies_fstream)
+    body_map = read_bodies(train_bodies_fstream, include_stopwords)
     text_bodies = [body_map[body_id] for body_id in body_ids]
     stances[1] = text_bodies
     fnc_data = FNCData(

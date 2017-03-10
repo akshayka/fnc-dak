@@ -353,10 +353,11 @@ class FNCModel(Model):
 
 
 def do_train(train_bodies, train_stances, dimension, embedding_path, config,
-    max_headline_len=None, max_body_len=None, verbose=False):
+    max_headline_len=None, max_body_len=None, verbose=False, 
+    include_stopwords=True):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
-        train_bodies, train_stances)
+        train_bodies, train_stances, include_stopwords)
     logging.info("%d training examples", len(fnc_data_train.headlines))
     logging.info("%d dev examples", len(fnc_data_dev.headlines))
     if max_headline_len is None:
@@ -446,6 +447,8 @@ if __name__ == "__main__":
         default="fnc-1-data/train_stances.csv", help="Training data")
     command_parser.add_argument("-d", "--dimension", type=int,
         default=50, help="Dimension of pretrained word vectors")
+    command_parser.add_argument("-sw", "--include_stopwords", action="store_true",
+        default=False, help="Include stopwords in data")
     # ------------------------ NN Architecture ------------------------
     command_parser.add_argument("-mhl", "--max_headline_len", type=int,
         default=None, help="maximum number of words per headline; if None, "
@@ -499,4 +502,5 @@ if __name__ == "__main__":
             embedding_path=embedding_path, config=config,
             max_headline_len=ARGS.max_headline_len,
             max_body_len=ARGS.max_body_len,
-            verbose=ARGS.verbose)
+            verbose=ARGS.verbose, 
+            include_stopwords=ARGS.include_stopwords)
