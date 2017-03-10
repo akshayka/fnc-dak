@@ -36,10 +36,9 @@ class Config:
     """
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
-        embed_size=50, hidden_sizes=[50], dropout=0.0,
-        batch_size=52, unweighted_loss=True, n_epochs=10,
-        train_embeddings_epoch=10, lr=0.001,
-        output_path=None):
+        embed_size=50, hidden_sizes=[50], dropout=0.0, batch_size=52,
+        unweighted_loss=True, regularizer=None, penalty=0.05, n_epochs=10,
+        train_embeddings_epoch=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
@@ -49,6 +48,8 @@ class Config:
         self.dropout = dropout
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
+        self.regularizer=regularizer
+        self.penalty=penalty
         self.n_epochs = n_epochs
         self.lr = lr
 
@@ -98,12 +99,13 @@ class FNCModel(Model):
         self.bodies_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_body_len, self.config.n_features))
         self.epoch_placeholder = tf.placeholder(tf.int32)
+        self.dropout_placeholder = tf.placeholder(tf.float32)
         self.labels_placeholder = tf.placeholder(tf.int32,
             shape=(None))
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, epoch,
-        labels_batch=None):
+        dropout=0.0, labels_batch=None):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -129,6 +131,7 @@ class FNCModel(Model):
         feed_dict[self.headlines_placeholder] = headlines_batch
         feed_dict[self.bodies_placeholder] = bodies_batch
         feed_dict[self.epoch_placeholder] = epoch
+        feed_dict[self.dropout_placeholder] = dropout
         if labels_batch is not None:
             feed_dict[self.labels_placeholder] = labels_batch
         return feed_dict
@@ -213,16 +216,14 @@ class FNCModel(Model):
                 kwargs["state_is_tuple"] = True
             for layer, hsz in enumerate(self.config.hidden_sizes):
                 cell = cell_type(num_units=hsz)
-                if self.config.dropout > 0:
-                    cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
-                        input_keep_prob=(1-self.config.dropout))
+                cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
+                    input_keep_prob=(1-self.dropout_placeholder))
                 cells.append(cell)
             if layers > 1:
                 cell = tf.contrib.rnn.MultiRNNCell(cells=cells,
                     state_is_tuple=True)
-            if self.config.dropout > 0:
-                cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
-                    output_keep_prob=(1-self.config.dropout))
+            cell = tf.contrib.rnn.DropoutWrapper(cell=cell,
+                output_keep_prob=(1-self.dropout_placeholder))
             # TODO(akshayka): How do we declare an initializer?
             outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=inputs,
                 sequence_length=seqlen, dtype=tf.float32, scope=scope)
@@ -245,9 +246,8 @@ class FNCModel(Model):
                             shape=(inputs_shape[2], inputs_shape[2]),
                             initializer=xav)
                         relu_input = tf.matmul(inputs, U)
-                        if self.config.dropout > 0:
-                            relu_input = tf.nn.dropout(relu_input,
-                                keep_prob=(1-self.config.dropout))
+                        relu_input = tf.nn.dropout(relu_input,
+                            keep_prob=(1-self.dropout_placeholder))
                         inputs = tf.nn.relu(relu_input)
                 inputs = tf.reshape(inputs,
                     (-1, inputs_shape[1], inputs_shape[2]))
@@ -259,9 +259,8 @@ class FNCModel(Model):
                 U = tf.get_variable("U", shape=(inputs.get_shape().as_list()[2],
                     self.config.hidden_sizes[-1]), initializer=xav)
                 relu_input = tf.matmul(mean, U)
-                if self.config.dropout > 0:
-                    relu_input = tf.nn.dropout(relu_input,
-                        keep_prob=(1-self.config.dropout))
+                relu_input = tf.nn.dropout(relu_input,
+                    keep_prob=(1-self.dropout_placeholder))
                 h = tf.nn.relu(relu_input)
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
@@ -323,6 +322,19 @@ class FNCModel(Model):
             xent = tf.nn.sparse_softmax_cross_entropy_with_logits(
                 logits=preds, labels=self.labels_placeholder)
         loss = tf.reduce_mean(xent)
+
+        if self.config.regularizer is not None:
+            weights = tf.trainable_variables()
+            if self.config.regularizer == "l2":
+                reg = tf.contrib.layers.l2_regularizer(
+                    scale=self.config.penalty)
+            elif self.config.regularizer == "l1":
+                reg = tf.contrib.layers.l1_regularizer(
+                    scale=self.config.penalty)
+            else:
+                raise ValueError("Invalid regularizer.")
+            penalty = tf.contrib.layers.apply_regularization(reg, weights)
+            loss += penalty
         return loss
 
 
@@ -347,7 +359,7 @@ class FNCModel(Model):
 
     def __init__(self, config, max_headline_len, max_body_len,
         pretrained_embeddings, verbose):
-        super(FNCModel, self).__init__(verbose=verbose)
+        super(FNCModel, self).__init__(config=config, verbose=verbose)
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
         self.max_headline_len = max_headline_len
@@ -477,6 +489,10 @@ if __name__ == "__main__":
     # ------------------------ Optimization Settings ------------------------
     command_parser.add_argument("-dp", "--dropout", type=float, default=0.0,
         help="Dropout probability")
+    command_parser.add_argument("-r", "--regularizer", type=str, default=None,
+        help="Regularizer to apply; one of l1 or l2")
+    command_parser.add_argument("-p", "--penalty", type=float, default=0.05,
+        help="Regularization; ignored if regularizer is None")
     command_parser.add_argument("-e", "--n_epochs", type=int, default=10,
         help="Number of training epochs.")
     command_parser.add_argument("-te", "--train_embeddings_epoch", type=int,
@@ -505,6 +521,8 @@ if __name__ == "__main__":
             hidden_sizes=ARGS.hidden_sizes,
             dropout=ARGS.dropout,
             unweighted_loss=ARGS.unweighted_loss,
+            regularizer=ARGS.regularizer,
+            penalty=ARGS.penalty,
             batch_size=ARGS.batch_size,
             n_epochs=ARGS.n_epochs,
             train_embeddings_epoch=ARGS.train_embeddings_epoch)
