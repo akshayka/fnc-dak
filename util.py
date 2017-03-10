@@ -290,13 +290,14 @@ def word_indices_to_words(example, indices_to_words):
     return [indices_to_words[i[0]] for i in example if i[0] != 0]
 
 
-def vectorize(examples, word_indices, max_len):
+def vectorize(examples, word_indices, known_words, max_len):
     """Convert a list of examples with word tokens to word indices.
 
     Args:
         examples: list of lists, each sublist is one example
             (i.e., a list of words)
-        word_indices: dict : word -> index
+        word_indices: dict word -> index
+        known_words: set : words in word_indices that are also in glove
         max_len: maximum length of any example
     Returns:
         vectorized_examples: list of lists, each sublist is one example and
@@ -304,7 +305,9 @@ def vectorize(examples, word_indices, max_len):
             matrix
     """
     pad_idx = word_indices[PAD_TOKEN]
-    vectorized_examples = [([[word_indices[w]] for w in e] + \
+    examples = [[w for w in e if w in known_words] for e in examples]
+    vectorized_examples = [(
+        [[word_indices[w]] for w in e] + \
         [[pad_idx]] * max(max_len - len(e), 0))[:max_len] for e in examples]
     return vectorized_examples
 
@@ -312,6 +315,7 @@ def vectorize(examples, word_indices, max_len):
 def load_embeddings(word_indices, dimension=300,
     embedding_path="glove/glove.6B.300d.txt"):
     embeddings = np.zeros([len(word_indices) + 1, dimension])
+    glove_words = set([])
     with open(embedding_path, 'rb') as fstream:
         for line in fstream:
             line = line.strip()
@@ -320,8 +324,6 @@ def load_embeddings(word_indices, dimension=300,
             row = line.split()
             word = row[0]
             if word not in word_indices:
-                # TODO(delenn): account for unseen words (unk token?)
-                logging.warning("%s not present in corpus", word)
                 continue
             data = [float(x) for x in row[1:]]
             if len(data) != dimension:
@@ -330,7 +332,15 @@ def load_embeddings(word_indices, dimension=300,
             # TODO(akshayka): if using arora's embeddings, multiply 
             # each embedding by its word weight
             embeddings[word_indices[word]] = np.asarray(data)
-    return embeddings
+            glove_words.add(word)
+    our_words = set(word_indices.keys())
+    # TODO(delenn): account for unseen words (unk token?)
+    unk = our_words.difference(glove_words)
+    if len(unk) > 0:
+        logging.warning("%d unknown words out of %d total", len(unk),
+            len(word_indices))
+    known_words = our_words.intersection(glove_words)
+    return embeddings, known_words
         
 
 def process_corpus(corpus):
