@@ -21,7 +21,7 @@ class TestLoadAndPreprocessFNCData(unittest.TestCase):
         super(TestLoadAndPreprocessFNCData, cls).setUpClass()
         tb = open("fnc-1-data/train_bodies.csv", "rb")
         ts = open("fnc-1-data/train_stances.csv", "rb")
-        cls.train_test_split = 0.7
+        cls.train_test_split = 0.8
         cls.fnc_data, cls.fnc_data_train, cls.fnc_data_test = \
             util.load_and_preprocess_fnc_data(tb, ts,
             train_test_split=cls.train_test_split)

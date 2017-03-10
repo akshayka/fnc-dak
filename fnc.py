@@ -285,6 +285,8 @@ class FNCModel(Model):
             scope=self.headline_scope)
         body_hidden = self.add_hidden_op(input_type='bodies',
             scope=self.body_scope)
+        # TODO(akshayka): append the cosine similarity to pred_input
+        # this will need to be a placeholder
         pred_input = tf.concat(axis=1, values=[headline_hidden, body_hidden])
 
         with tf.variable_scope("prediction_op"):

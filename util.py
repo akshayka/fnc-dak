@@ -11,6 +11,7 @@ import sys
 import numpy as np
 from nltk.corpus import stopwords
 
+# TODO(akshayka): Add a field for cosine similarity
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
     "max_headline_len", "max_body_len"])
 TOKEN_RE = r"\w+[']?[\w+]?"
@@ -320,11 +321,14 @@ def load_embeddings(word_indices, dimension=300,
             word = row[0]
             if word not in word_indices:
                 # TODO(delenn): account for unseen words (unk token?)
+                logging.warning("%s not present in corpus", word)
                 continue
             data = [float(x) for x in row[1:]]
             if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
+            # TODO(akshayka): if using arora's embeddings, multiply 
+            # each embedding by its word weight
             embeddings[word_indices[word]] = np.asarray(data)
     return embeddings
         
@@ -389,7 +393,7 @@ def read_bodies(fstream, include_stopwords):
 
 
 def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream, 
-    include_stopwords, train_test_split=0.7):
+    include_stopwords, train_test_split=0.8):
     stances = read_stances(train_stances_fstream, include_stopwords)
     body_ids = stances[1]
     unique_body_ids = list(set(body_ids))
