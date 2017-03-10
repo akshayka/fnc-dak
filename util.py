@@ -346,12 +346,12 @@ def tokenize_text(text, include_stopwords):
     if include_stopwords:
         tokenized = [tok.replace("'", "") for tok in re.findall(TOKEN_RE, 
             text.lower())]
-    else include_stopwords:
+    else:
         tokenized = [tok.replace("'", "") for tok in re.findall(TOKEN_RE, 
             text.lower()) if tok not in STOPWORDS]
     return tokenized
 
-def read_stances(fstream):
+def read_stances(fstream, include_stopwords):
     """Returns headlines, ids, stances"""
     fstream.readline() # read past the header
     csv_reader = csv.reader(fstream)
@@ -375,7 +375,7 @@ def read_stances(fstream):
     return [headlines, body_ids, stances]
 
 
-def read_bodies(fstream):
+def read_bodies(fstream, include_stopwords):
     """ 
     Basic pre-processing for bodies. Bodies can span multiple lines, beginning
     and ends denoted by quotes. Quotes within a body are denoted with double
