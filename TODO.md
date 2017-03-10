@@ -5,6 +5,7 @@
 ## Features
 1. Implement: Remove stop-words, weight word vectors by TF-IDF
 2. Experiment: Dimension of word vectors
+3. Implement and Experiment: Headline/Body Similarity Feature
 
 ## Training word vectors
 1. Experiment: do not train word vectors
