@@ -14,7 +14,7 @@ class Model(object):
     computational graphs. Each algorithm you will construct in this homework will
     inherit from a Model object.
     """
-    def __init__(self, verbose=False):
+    def __init__(self, config, verbose=False):
         self.verbose = verbose
 
 
@@ -82,6 +82,7 @@ class Model(object):
 
         raise NotImplementedError("Each Model must re-implement this method.")
 
+
     def train_on_batch(self, sess, headlines_batch, bodies_batch, labels_batch):
         """Perform one step of gradient descent on the provided batch of data.
 
@@ -93,7 +94,7 @@ class Model(object):
             loss: loss over the batch (a scalar)
         """
         feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch,
-            labels_batch=labels_batch)
+            dropout=self.config.dropout, labels_batch=labels_batch)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
@@ -107,7 +108,9 @@ class Model(object):
         Returns:
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
-        feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch)
+        # Do not apply dropout during evaluation!
+        feed = self.create_feed_dict(headlines_batch, bodies_batch,
+            self.epoch, dropout=0)
         predictions = sess.run(self.argmax_pred, feed_dict=feed)
         return predictions
 
