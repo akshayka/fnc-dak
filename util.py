@@ -384,7 +384,8 @@ def read_bodies(fstream, include_stopwords):
     """
     fstream.readline() # read past the header
     csv_reader = csv.reader(fstream)
-    body_map = {int(row[0]) : tokenize_text(row[1], include_stopwords) for row in csv_reader} 
+    body_map = {int(row[0]) : tokenize_text(row[1], 
+        include_stopwords) for row in csv_reader} 
     return body_map
 
 
