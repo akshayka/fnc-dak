@@ -400,22 +400,23 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         [w for headline in fnc_data.headlines for w in headline])
     word_indices = util.process_corpus(corpus)
     logging.info("Building embedding matrix ...")
-    embeddings = util.load_embeddings(word_indices, dimension, embedding_path)
+    embeddings, known_words = util.load_embeddings(word_indices, dimension,
+        embedding_path)
 
     logging.info("Vectorizing data ...")
     # Vectorize and assemble the training data
     headline_vectors = util.vectorize(fnc_data_train.headlines, word_indices,
-        max_headline_len)
+        known_words, max_headline_len)
     body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
-        max_body_len)
+        known_words, max_body_len)
     training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
     dev_headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
-        max_headline_len)
+        known_words, max_headline_len)
     dev_body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
-        max_body_len)
+        known_words, max_body_len)
     dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
 
     handler = logging.FileHandler(config.log_output)
