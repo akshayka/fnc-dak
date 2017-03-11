@@ -10,9 +10,13 @@ import sys
 
 import numpy as np
 from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics import jaccard_similarity_score
 
 # TODO(akshayka): Add a field for cosine similarity
-FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
+FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances", "sim_scores",
     "max_headline_len", "max_body_len"])
 # TODO(akshayka): What about special punctuation like "@" or "#"?
 TOKEN_RE = r"[a-zA-Z]+[']?[a-zA-Z+]?"
@@ -296,8 +300,38 @@ def minibatches(data, batch_size, shuffle=True):
 # ---------------- Utilities for data processing -------------
 PAD_TOKEN = "___PPPADDD___"
 
-# def cosine_similarity(bodies, headlines):
-    
+def countFeaturizer(data, binary_counts):
+    stemmer = PorterStemmer()
+    analyzer = CountVectorizer(stop_words="english").build_analyzer()
+
+    def stemWords(text):
+        return (stemmer.stem(x) for x in analyzer(text))
+
+    stemmed_vectorizer = CountVectorizer(analyzer=stemWords, 
+        binary=binary_counts)
+    return stemmed_vectorizer
+
+def similarity_metrics(headlines, bodies, similarity_metric_feature):
+    if not similarity_metric_feature:
+        return None
+    binary_counts = True if similarity_metric_feature == "jaccard" else False
+    featurizer = countFeaturizer(headlines + bodies, binary_counts)
+
+    featurized_bodies = featurizer.fit_transform(headlines)
+    featurized_headlines = featurizer.fit_transform(bodies)
+
+    if tfidf:
+        transformer = TfidfTransformer()
+        tfidf_headlines = transformer.fit_transform(featurized_headlines)
+        tfidf_bodies = transformer.fit_transform(featurized_bodies)
+
+    if similarity_metric_feature == "jaccard":
+        sim_scores = [jaccard_similarity_score(featurized_headlines[i], 
+            featurized_bodies[i]) for i in len(headlines)]
+    else: # Use cosine similarity
+        sim_scores = np.diagonal(cosine_similarity(featurized_headlines, 
+            featurized_bodies))
+    return sim_scores
 
 
 # Taken from Arora's code: https://github.com/YingyuLiang/SIF/
@@ -450,7 +484,7 @@ def read_bodies(fstream, include_stopwords):
 
 
 def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream, 
-    include_stopwords, train_test_split=0.8):
+    include_stopwords, similarity_metric_feature, train_test_split=0.8):
     stances = read_stances(train_stances_fstream, include_stopwords)
     body_ids = stances[1]
     unique_body_ids = list(set(body_ids))
@@ -471,13 +505,17 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     body_map = read_bodies(train_bodies_fstream, include_stopwords)
     text_bodies = [body_map[body_id] for body_id in body_ids]
     stances[1] = text_bodies
+    sim_scores = similarity_metrics(stances[0], stances[1], 
+        similarity_metric_feature)
     fnc_data = FNCData(
         headlines=stances[0], bodies=stances[1], stances=stances[2],
-        max_headline_len=0, max_body_len=0)
+        sim_scores=sim_scores, max_headline_len=0, max_body_len=0)
 
     # Populate training data from train_indices
     train_headlines = [fnc_data.headlines[i] for i in train_indices]
     train_bodies = [fnc_data.bodies[i] for i in train_indices]
+    train_sim_scores = [fnc_data.sim_scores[i] for i in train_indices] \
+        if similarity_metric_feature else None
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
     body_lens = [len(body) for body in train_bodies]
@@ -485,15 +523,17 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     fnc_data_train = FNCData(
         headlines=train_headlines, bodies=train_bodies,
         stances=[fnc_data.stances[i] for i in train_indices],
+        sim_scores=train_sim_scores,
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
     # Populate test data from test_indices
+    test_sim_scores = [fnc_data.sim_scores[i] for i in test_indices] \
+        if similarity_metric_feature else None
     fnc_data_test = FNCData(
         headlines=[fnc_data.headlines[i] for i in test_indices],
         bodies=[fnc_data.bodies[i] for i in test_indices],
         stances=[fnc_data.stances[i] for i in test_indices],
+        sim_scores=test_sim_scores,
         max_headline_len=max_headline_len, max_body_len=max_body_len)
-
-    # TODO(delenn): Add cosine similarity called on train and dev here
 
     return fnc_data, fnc_data_train, fnc_data_test
