@@ -250,7 +250,6 @@ class Model(object):
         plt.plot(epochs, dev_scores, "bo", label="dev scores")
         plt.title("FNC Scores across Epochs")
         plt.legend()
-        plt.xticks(epochs + [self.config.n_epochs + 1])
         plt.savefig(self.config.output_path + "fnc_scores.png")
         return best_score
     
