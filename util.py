@@ -299,6 +299,7 @@ PAD_TOKEN = "___PPPADDD___"
 # def cosine_similarity(bodies, headlines):
     
 
+
 # Taken from Arora's code: https://github.com/YingyuLiang/SIF/
 def get_word_weights(weightfile, a=1e-3):
     if a <=0: # when the parameter makes no sense, use unweighted
@@ -492,5 +493,7 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
         bodies=[fnc_data.bodies[i] for i in test_indices],
         stances=[fnc_data.stances[i] for i in test_indices],
         max_headline_len=max_headline_len, max_body_len=max_body_len)
+
+    # TODO(delenn): Add cosine similarity called on train and dev here
 
     return fnc_data, fnc_data_train, fnc_data_test
