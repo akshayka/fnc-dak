@@ -1,0 +1,1782 @@
+2017-03-10 15:42:53,342:INFO: Arguments: {'batch_size': 52,
+ 'dimension': 300,
+ 'dropout': 0.0,
+ 'func': <function do_train at 0x10f9c6f50>,
+ 'hidden_sizes': [300],
+ 'include_stopwords': False,
+ 'max_body_len': 30,
+ 'max_headline_len': None,
+ 'method': 'bag_of_words',
+ 'n_epochs': 40,
+ 'penalty': 0.05,
+ 'regularizer': None,
+ 'similarity_metric': True,
+ 'train_bodies': <open file 'fnc-1-data/train_bodies.csv', mode 'r' at 0x10f98fae0>,
+ 'train_embeddings_epoch': 41,
+ 'train_stances': <open file 'fnc-1-data/train_stances.csv', mode 'r' at 0x10f98fc00>,
+ 'transform_mean': True,
+ 'unweighted_loss': False,
+ 'verbose': True,
+ 'weight_embeddings': False}
+2017-03-10 15:42:53,342:INFO: Loading training and dev data ...
+2017-03-10 15:42:54,518:INFO: 40015 training examples
+2017-03-10 15:42:54,518:INFO: 9957 dev examples
+2017-03-10 15:42:54,518:INFO: Max headline length: 29
+2017-03-10 15:42:54,518:INFO: Max body length: 30
+2017-03-10 15:42:54,519:INFO: Building word-to-index map ...
+2017-03-10 15:42:55,945:INFO: Building embedding matrix ...
+2017-03-10 15:43:03,721:WARNING: 2266 unknown words out of 23640 total
+2017-03-10 15:43:03,725:INFO: Vectorizing data ...
+2017-03-10 15:43:11,926:INFO: Building model...
+2017-03-10 15:43:11,926:DEBUG: Creating model with method bag_of_words
+2017-03-10 15:43:13,209:INFO: took 1.28 seconds
+2017-03-10 15:43:14,213:INFO: Fitting ...
+2017-03-10 15:43:14,213:INFO: Epoch 1 out of 40
+2017-03-10 15:45:24,764:INFO: Evaluating on training data
+2017-03-10 15:45:28,773:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	105.00   	28767.00 	257.00   	1.00     
+discuss  	53.00    	7118.00  	38.00    	0.00     
+disagree 	0.00     	648.00   	17.00    	0.00     
+agree    	2.00     	2896.00  	111.00   	2.00     
+
+2017-03-10 15:45:28,774:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.59     	0.18     	0.18     	0.18     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.70     	0.18     	0.66     	0.28     
+
+2017-03-10 15:45:28,774:INFO: Entity level P/R/F1: 0.18/0.66/0.28
+2017-03-10 15:45:28,774:INFO: FNC Score: 0.45
+2017-03-10 15:45:28,774:INFO: Unrelated Score: 0.40
+2017-03-10 15:45:28,774:INFO: Evaluating on development data
+2017-03-10 15:45:29,621:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24.00    	7308.00  	83.00    	0.00     
+discuss  	4.00     	1689.00  	7.00     	0.00     
+disagree 	0.00     	173.00   	2.00     	0.00     
+agree    	2.00     	643.00   	22.00    	0.00     
+
+2017-03-10 15:45:29,621:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.59     	0.17     	0.17     	0.17     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.70     	0.17     	0.67     	0.27     
+
+2017-03-10 15:45:29,621:INFO: Entity level P/R/F1: 0.17/0.67/0.27
+2017-03-10 15:45:29,621:INFO: FNC Score: 0.43
+2017-03-10 15:45:29,621:INFO: Unrelated Score: 0.42
+2017-03-10 15:45:29,621:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:45:31,162:INFO: Epoch 2 out of 40
+2017-03-10 15:47:40,104:INFO: Evaluating on training data
+2017-03-10 15:47:43,308:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	1576.00  	27429.00 	125.00   	0.00     
+discuss  	119.00   	7075.00  	15.00    	0.00     
+disagree 	1.00     	653.00   	11.00    	0.00     
+agree    	9.00     	2923.00  	77.00    	2.00     
+
+2017-03-10 15:47:43,308:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.61     	0.22     	0.22     	0.22     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.71     	0.19     	0.65     	0.29     
+
+2017-03-10 15:47:43,308:INFO: Entity level P/R/F1: 0.19/0.65/0.29
+2017-03-10 15:47:43,308:INFO: FNC Score: 0.46
+2017-03-10 15:47:43,308:INFO: Unrelated Score: 0.40
+2017-03-10 15:47:43,308:INFO: Evaluating on development data
+2017-03-10 15:47:44,121:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	385.00   	6954.00  	76.00    	0.00     
+discuss  	22.00    	1673.00  	5.00     	0.00     
+disagree 	0.00     	172.00   	3.00     	0.00     
+agree    	5.00     	645.00   	17.00    	0.00     
+
+2017-03-10 15:47:44,122:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.60     	0.21     	0.21     	0.21     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.71     	0.18     	0.66     	0.28     
+
+2017-03-10 15:47:44,122:INFO: Entity level P/R/F1: 0.18/0.66/0.28
+2017-03-10 15:47:44,122:INFO: FNC Score: 0.45
+2017-03-10 15:47:44,122:INFO: Unrelated Score: 0.42
+2017-03-10 15:47:44,122:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:47:45,618:INFO: Epoch 3 out of 40
+2017-03-10 15:49:56,166:INFO: Evaluating on training data
+2017-03-10 15:49:59,391:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5134.00  	23874.00 	122.00   	0.00     
+discuss  	141.00   	7059.00  	9.00     	0.00     
+disagree 	1.00     	648.00   	16.00    	0.00     
+agree    	17.00    	2880.00  	112.00   	2.00     
+
+2017-03-10 15:49:59,392:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.65     	0.31     	0.31     	0.31     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.74     	0.20     	0.65     	0.31     
+
+2017-03-10 15:49:59,392:INFO: Entity level P/R/F1: 0.20/0.65/0.31
+2017-03-10 15:49:59,392:INFO: FNC Score: 0.51
+2017-03-10 15:49:59,392:INFO: Unrelated Score: 0.40
+2017-03-10 15:49:59,392:INFO: Evaluating on development data
+2017-03-10 15:50:00,202:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	1183.00  	6134.00  	98.00    	0.00     
+discuss  	34.00    	1658.00  	8.00     	0.00     
+disagree 	1.00     	171.00   	3.00     	0.00     
+agree    	7.00     	633.00   	27.00    	0.00     
+
+2017-03-10 15:50:00,202:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.64     	0.29     	0.29     	0.29     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.73     	0.19     	0.65     	0.29     
+
+2017-03-10 15:50:00,203:INFO: Entity level P/R/F1: 0.19/0.65/0.29
+2017-03-10 15:50:00,203:INFO: FNC Score: 0.49
+2017-03-10 15:50:00,203:INFO: Unrelated Score: 0.42
+2017-03-10 15:50:00,203:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:50:02,141:INFO: Epoch 4 out of 40
+2017-03-10 15:52:11,159:INFO: Evaluating on training data
+2017-03-10 15:52:14,417:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	9609.00  	19349.00 	172.00   	0.00     
+discuss  	176.00   	7007.00  	26.00    	0.00     
+disagree 	3.00     	600.00   	62.00    	0.00     
+agree    	34.00    	2722.00  	254.00   	1.00     
+
+2017-03-10 15:52:14,418:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.71     	0.42     	0.42     	0.42     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.78     	0.23     	0.65     	0.34     
+
+2017-03-10 15:52:14,418:INFO: Entity level P/R/F1: 0.23/0.65/0.34
+2017-03-10 15:52:14,418:INFO: FNC Score: 0.57
+2017-03-10 15:52:14,418:INFO: Unrelated Score: 0.40
+2017-03-10 15:52:14,418:INFO: Evaluating on development data
+2017-03-10 15:52:15,243:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	2196.00  	5109.00  	110.00   	0.00     
+discuss  	43.00    	1644.00  	13.00    	0.00     
+disagree 	1.00     	165.00   	9.00     	0.00     
+agree    	7.00     	615.00   	45.00    	0.00     
+
+2017-03-10 15:52:15,244:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.69     	0.39     	0.39     	0.39     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.77     	0.21     	0.65     	0.32     
+
+2017-03-10 15:52:15,244:INFO: Entity level P/R/F1: 0.21/0.65/0.32
+2017-03-10 15:52:15,244:INFO: FNC Score: 0.55
+2017-03-10 15:52:15,244:INFO: Unrelated Score: 0.42
+2017-03-10 15:52:15,244:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:52:16,758:INFO: Epoch 5 out of 40
+2017-03-10 15:54:25,499:INFO: Evaluating on training data
+2017-03-10 15:54:28,770:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	15482.00 	13583.00 	65.00    	0.00     
+discuss  	196.00   	6993.00  	20.00    	0.00     
+disagree 	6.00     	595.00   	64.00    	0.00     
+agree    	48.00    	2656.00  	306.00   	1.00     
+
+2017-03-10 15:54:28,771:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.78     	0.56     	0.56     	0.56     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.82     	0.29     	0.65     	0.40     
+
+2017-03-10 15:54:28,771:INFO: Entity level P/R/F1: 0.29/0.65/0.40
+2017-03-10 15:54:28,771:INFO: FNC Score: 0.65
+2017-03-10 15:54:28,771:INFO: Unrelated Score: 0.40
+2017-03-10 15:54:28,771:INFO: Evaluating on development data
+2017-03-10 15:54:29,587:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	3605.00  	3784.00  	26.00    	0.00     
+discuss  	51.00    	1640.00  	9.00     	0.00     
+disagree 	2.00     	163.00   	10.00    	0.00     
+agree    	17.00    	603.00   	47.00    	0.00     
+
+2017-03-10 15:54:29,588:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.76     	0.53     	0.53     	0.53     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.82     	0.26     	0.65     	0.37     
+
+2017-03-10 15:54:29,588:INFO: Entity level P/R/F1: 0.26/0.65/0.37
+2017-03-10 15:54:29,588:INFO: FNC Score: 0.63
+2017-03-10 15:54:29,588:INFO: Unrelated Score: 0.42
+2017-03-10 15:54:29,588:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:54:31,110:INFO: Epoch 6 out of 40
+2017-03-10 15:56:39,998:INFO: Evaluating on training data
+2017-03-10 15:56:43,754:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	17396.00 	11673.00 	61.00    	0.00     
+discuss  	93.00    	7071.00  	45.00    	0.00     
+disagree 	4.00     	533.00   	128.00   	0.00     
+agree    	25.00    	2322.00  	664.00   	0.00     
+
+2017-03-10 15:56:43,755:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.81     	0.61     	0.61     	0.61     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.84     	0.32     	0.66     	0.43     
+
+2017-03-10 15:56:43,755:INFO: Entity level P/R/F1: 0.32/0.66/0.43
+2017-03-10 15:56:43,755:INFO: FNC Score: 0.68
+2017-03-10 15:56:43,755:INFO: Unrelated Score: 0.40
+2017-03-10 15:56:43,755:INFO: Evaluating on development data
+2017-03-10 15:56:44,568:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	4081.00  	3319.00  	15.00    	0.00     
+discuss  	34.00    	1642.00  	24.00    	0.00     
+disagree 	1.00     	151.00   	23.00    	0.00     
+agree    	11.00    	563.00   	93.00    	0.00     
+
+2017-03-10 15:56:44,569:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.79     	0.58     	0.58     	0.58     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.83     	0.29     	0.65     	0.40     
+
+2017-03-10 15:56:44,569:INFO: Entity level P/R/F1: 0.29/0.65/0.40
+2017-03-10 15:56:44,569:INFO: FNC Score: 0.66
+2017-03-10 15:56:44,569:INFO: Unrelated Score: 0.42
+2017-03-10 15:56:44,569:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:56:46,079:INFO: Epoch 7 out of 40
+2017-03-10 15:58:54,725:INFO: Evaluating on training data
+2017-03-10 15:58:58,157:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	20000.00 	9083.00  	47.00    	0.00     
+discuss  	90.00    	7070.00  	49.00    	0.00     
+disagree 	4.00     	519.00   	142.00   	0.00     
+agree    	21.00    	2178.00  	812.00   	0.00     
+
+2017-03-10 15:58:58,157:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.84     	0.68     	0.68     	0.68     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.86     	0.36     	0.66     	0.47     
+
+2017-03-10 15:58:58,157:INFO: Entity level P/R/F1: 0.36/0.66/0.47
+2017-03-10 15:58:58,157:INFO: FNC Score: 0.72
+2017-03-10 15:58:58,157:INFO: Unrelated Score: 0.40
+2017-03-10 15:58:58,158:INFO: Evaluating on development data
+2017-03-10 15:58:58,993:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	4665.00  	2741.00  	9.00     	0.00     
+discuss  	41.00    	1628.00  	31.00    	0.00     
+disagree 	3.00     	151.00   	21.00    	0.00     
+agree    	12.00    	543.00   	112.00   	0.00     
+
+2017-03-10 15:58:58,994:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.82     	0.63     	0.63     	0.63     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.85     	0.31     	0.65     	0.42     
+
+2017-03-10 15:58:58,994:INFO: Entity level P/R/F1: 0.31/0.65/0.42
+2017-03-10 15:58:58,994:INFO: FNC Score: 0.69
+2017-03-10 15:58:58,994:INFO: Unrelated Score: 0.42
+2017-03-10 15:58:58,994:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 15:59:00,505:INFO: Epoch 8 out of 40
+2017-03-10 16:01:12,165:INFO: Evaluating on training data
+2017-03-10 16:01:15,730:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	21018.00 	8056.00  	56.00    	0.00     
+discuss  	70.00    	7044.00  	95.00    	0.00     
+disagree 	1.00     	483.00   	181.00   	0.00     
+agree    	19.00    	1967.00  	1024.00  	1.00     
+
+2017-03-10 16:01:15,731:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.85     	0.71     	0.71     	0.71     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.87     	0.38     	0.66     	0.49     
+
+2017-03-10 16:01:15,731:INFO: Entity level P/R/F1: 0.38/0.66/0.49
+2017-03-10 16:01:15,731:INFO: FNC Score: 0.74
+2017-03-10 16:01:15,731:INFO: Unrelated Score: 0.40
+2017-03-10 16:01:15,731:INFO: Evaluating on development data
+2017-03-10 16:01:16,982:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	4873.00  	2534.00  	8.00     	0.00     
+discuss  	43.00    	1607.00  	50.00    	0.00     
+disagree 	2.00     	143.00   	30.00    	0.00     
+agree    	11.00    	494.00   	162.00   	0.00     
+
+2017-03-10 16:01:16,982:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.83     	0.65     	0.65     	0.65     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.86     	0.33     	0.64     	0.43     
+
+2017-03-10 16:01:16,982:INFO: Entity level P/R/F1: 0.33/0.64/0.43
+2017-03-10 16:01:16,982:INFO: FNC Score: 0.70
+2017-03-10 16:01:16,982:INFO: Unrelated Score: 0.42
+2017-03-10 16:01:16,983:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:01:18,490:INFO: Epoch 9 out of 40
+2017-03-10 16:03:28,082:INFO: Evaluating on training data
+2017-03-10 16:03:31,442:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	21685.00 	7382.00  	63.00    	0.00     
+discuss  	62.00    	7026.00  	121.00   	0.00     
+disagree 	1.00     	440.00   	224.00   	0.00     
+agree    	16.00    	1806.00  	1184.00  	5.00     
+
+2017-03-10 16:03:31,443:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.86     	0.72     	0.72     	0.72     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.88     	0.40     	0.67     	0.50     
+
+2017-03-10 16:03:31,443:INFO: Entity level P/R/F1: 0.40/0.67/0.50
+2017-03-10 16:03:31,443:INFO: FNC Score: 0.75
+2017-03-10 16:03:31,443:INFO: Unrelated Score: 0.40
+2017-03-10 16:03:31,443:INFO: Evaluating on development data
+2017-03-10 16:03:32,271:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5027.00  	2380.00  	8.00     	0.00     
+discuss  	40.00    	1593.00  	67.00    	0.00     
+disagree 	3.00     	131.00   	41.00    	0.00     
+agree    	11.00    	463.00   	193.00   	0.00     
+
+2017-03-10 16:03:32,272:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.83     	0.67     	0.67     	0.67     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.86     	0.34     	0.64     	0.44     
+
+2017-03-10 16:03:32,272:INFO: Entity level P/R/F1: 0.34/0.64/0.44
+2017-03-10 16:03:32,272:INFO: FNC Score: 0.71
+2017-03-10 16:03:32,273:INFO: Unrelated Score: 0.42
+2017-03-10 16:03:32,273:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:03:33,788:INFO: Epoch 10 out of 40
+2017-03-10 16:05:43,204:INFO: Evaluating on training data
+2017-03-10 16:05:46,599:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	21957.00 	7097.00  	76.00    	0.00     
+discuss  	49.00    	6978.00  	182.00   	0.00     
+disagree 	1.00     	395.00   	269.00   	0.00     
+agree    	12.00    	1601.00  	1371.00  	27.00    
+
+2017-03-10 16:05:46,600:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.87     	0.73     	0.73     	0.73     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.88     	0.40     	0.67     	0.50     
+
+2017-03-10 16:05:46,600:INFO: Entity level P/R/F1: 0.40/0.67/0.50
+2017-03-10 16:05:46,600:INFO: FNC Score: 0.75
+2017-03-10 16:05:46,600:INFO: Unrelated Score: 0.40
+2017-03-10 16:05:46,600:INFO: Evaluating on development data
+2017-03-10 16:05:47,423:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5076.00  	2328.00  	11.00    	0.00     
+discuss  	38.00    	1585.00  	77.00    	0.00     
+disagree 	1.00     	121.00   	53.00    	0.00     
+agree    	8.00     	432.00   	227.00   	0.00     
+
+2017-03-10 16:05:47,424:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.84     	0.67     	0.67     	0.67     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.86     	0.34     	0.64     	0.44     
+
+2017-03-10 16:05:47,424:INFO: Entity level P/R/F1: 0.34/0.64/0.44
+2017-03-10 16:05:47,424:INFO: FNC Score: 0.71
+2017-03-10 16:05:47,424:INFO: Unrelated Score: 0.42
+2017-03-10 16:05:47,424:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:05:49,381:INFO: Epoch 11 out of 40
+2017-03-10 16:07:58,144:INFO: Evaluating on training data
+2017-03-10 16:08:01,561:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	22111.00 	6935.00  	84.00    	0.00     
+discuss  	38.00    	6965.00  	206.00   	0.00     
+disagree 	1.00     	358.00   	306.00   	0.00     
+agree    	10.00    	1457.00  	1461.00  	83.00    
+
+2017-03-10 16:08:01,561:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.87     	0.74     	0.74     	0.74     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.88     	0.41     	0.68     	0.51     
+
+2017-03-10 16:08:01,561:INFO: Entity level P/R/F1: 0.41/0.68/0.51
+2017-03-10 16:08:01,561:INFO: FNC Score: 0.76
+2017-03-10 16:08:01,562:INFO: Unrelated Score: 0.40
+2017-03-10 16:08:01,562:INFO: Evaluating on development data
+2017-03-10 16:08:02,385:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5109.00  	2292.00  	14.00    	0.00     
+discuss  	35.00    	1570.00  	95.00    	0.00     
+disagree 	2.00     	109.00   	64.00    	0.00     
+agree    	7.00     	404.00   	256.00   	0.00     
+
+2017-03-10 16:08:02,385:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.84     	0.68     	0.68     	0.68     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.86     	0.34     	0.64     	0.44     
+
+2017-03-10 16:08:02,386:INFO: Entity level P/R/F1: 0.34/0.64/0.44
+2017-03-10 16:08:02,386:INFO: FNC Score: 0.71
+2017-03-10 16:08:02,386:INFO: Unrelated Score: 0.42
+2017-03-10 16:08:02,386:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:08:03,899:INFO: Epoch 12 out of 40
+2017-03-10 16:10:12,497:INFO: Evaluating on training data
+2017-03-10 16:10:15,826:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	22310.00 	6726.00  	94.00    	0.00     
+discuss  	31.00    	6942.00  	235.00   	1.00     
+disagree 	1.00     	330.00   	333.00   	1.00     
+agree    	5.00     	1325.00  	1530.00  	151.00   
+
+2017-03-10 16:10:15,826:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.74     	0.74     	0.74     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.68     	0.52     
+
+2017-03-10 16:10:15,826:INFO: Entity level P/R/F1: 0.42/0.68/0.52
+2017-03-10 16:10:15,827:INFO: FNC Score: 0.76
+2017-03-10 16:10:15,827:INFO: Unrelated Score: 0.40
+2017-03-10 16:10:15,827:INFO: Evaluating on development data
+2017-03-10 16:10:16,659:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5133.00  	2263.00  	19.00    	0.00     
+discuss  	34.00    	1565.00  	101.00   	0.00     
+disagree 	1.00     	108.00   	66.00    	0.00     
+agree    	6.00     	378.00   	280.00   	3.00     
+
+2017-03-10 16:10:16,659:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	1.00     	0.00     	0.00     
+micro    	0.84     	0.68     	0.68     	0.68     
+macro    	0.00     	0.25     	0.00     	0.00     
+not-O    	0.86     	0.34     	0.64     	0.45     
+
+2017-03-10 16:10:16,659:INFO: Entity level P/R/F1: 0.34/0.64/0.45
+2017-03-10 16:10:16,659:INFO: FNC Score: 0.71
+2017-03-10 16:10:16,659:INFO: Unrelated Score: 0.42
+2017-03-10 16:10:16,660:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:10:18,153:INFO: Epoch 13 out of 40
+2017-03-10 16:12:26,985:INFO: Evaluating on training data
+2017-03-10 16:12:30,789:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	22889.00 	6147.00  	94.00    	0.00     
+discuss  	32.00    	6943.00  	233.00   	1.00     
+disagree 	0.00     	306.00   	358.00   	1.00     
+agree    	5.00     	1258.00  	1502.00  	246.00   
+
+2017-03-10 16:12:30,790:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.44     	0.69     	0.54     
+
+2017-03-10 16:12:30,790:INFO: Entity level P/R/F1: 0.44/0.69/0.54
+2017-03-10 16:12:30,790:INFO: FNC Score: 0.78
+2017-03-10 16:12:30,790:INFO: Unrelated Score: 0.40
+2017-03-10 16:12:30,790:INFO: Evaluating on development data
+2017-03-10 16:12:31,612:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5255.00  	2144.00  	16.00    	0.00     
+discuss  	35.00    	1554.00  	110.00   	1.00     
+disagree 	2.00     	103.00   	70.00    	0.00     
+agree    	7.00     	365.00   	284.00   	11.00    
+
+2017-03-10 16:12:31,613:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.85     	0.69     	0.69     	0.69     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.87     	0.35     	0.64     	0.45     
+
+2017-03-10 16:12:31,613:INFO: Entity level P/R/F1: 0.35/0.64/0.45
+2017-03-10 16:12:31,614:INFO: FNC Score: 0.72
+2017-03-10 16:12:31,614:INFO: Unrelated Score: 0.42
+2017-03-10 16:12:31,614:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:12:33,133:INFO: Epoch 14 out of 40
+2017-03-10 16:14:41,839:INFO: Evaluating on training data
+2017-03-10 16:14:45,167:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	23266.00 	5775.00  	89.00    	0.00     
+discuss  	29.00    	6944.00  	235.00   	1.00     
+disagree 	1.00     	287.00   	375.00   	2.00     
+agree    	5.00     	1196.00  	1466.00  	344.00   
+
+2017-03-10 16:14:45,167:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.89     	0.77     	0.77     	0.77     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.90     	0.46     	0.70     	0.56     
+
+2017-03-10 16:14:45,167:INFO: Entity level P/R/F1: 0.46/0.70/0.56
+2017-03-10 16:14:45,167:INFO: FNC Score: 0.79
+2017-03-10 16:14:45,167:INFO: Unrelated Score: 0.40
+2017-03-10 16:14:45,167:INFO: Evaluating on development data
+2017-03-10 16:14:46,001:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5383.00  	2014.00  	18.00    	0.00     
+discuss  	37.00    	1552.00  	109.00   	2.00     
+disagree 	1.00     	105.00   	69.00    	0.00     
+agree    	5.00     	361.00   	280.00   	21.00    
+
+2017-03-10 16:14:46,001:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.85     	0.71     	0.71     	0.71     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.87     	0.36     	0.65     	0.46     
+
+2017-03-10 16:14:46,001:INFO: Entity level P/R/F1: 0.36/0.65/0.46
+2017-03-10 16:14:46,001:INFO: FNC Score: 0.73
+2017-03-10 16:14:46,001:INFO: Unrelated Score: 0.42
+2017-03-10 16:14:46,001:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:14:47,510:INFO: Epoch 15 out of 40
+2017-03-10 16:16:56,462:INFO: Evaluating on training data
+2017-03-10 16:16:59,805:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	23580.00 	5448.00  	102.00   	0.00     
+discuss  	24.00    	6936.00  	246.00   	3.00     
+disagree 	1.00     	271.00   	391.00   	2.00     
+agree    	5.00     	1124.00  	1430.00  	452.00   
+
+2017-03-10 16:16:59,806:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.89     	0.78     	0.78     	0.78     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.90     	0.47     	0.71     	0.57     
+
+2017-03-10 16:16:59,806:INFO: Entity level P/R/F1: 0.47/0.71/0.57
+2017-03-10 16:16:59,806:INFO: FNC Score: 0.79
+2017-03-10 16:16:59,806:INFO: Unrelated Score: 0.40
+2017-03-10 16:16:59,806:INFO: Evaluating on development data
+2017-03-10 16:17:00,631:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5457.00  	1940.00  	18.00    	0.00     
+discuss  	41.00    	1542.00  	114.00   	3.00     
+disagree 	1.00     	99.00    	75.00    	0.00     
+agree    	3.00     	347.00   	291.00   	26.00    
+
+2017-03-10 16:17:00,632:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.86     	0.71     	0.71     	0.71     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.88     	0.37     	0.65     	0.47     
+
+2017-03-10 16:17:00,633:INFO: Entity level P/R/F1: 0.37/0.65/0.47
+2017-03-10 16:17:00,633:INFO: FNC Score: 0.73
+2017-03-10 16:17:00,633:INFO: Unrelated Score: 0.42
+2017-03-10 16:17:00,633:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:17:02,564:INFO: Epoch 16 out of 40
+2017-03-10 16:19:10,967:INFO: Evaluating on training data
+2017-03-10 16:19:14,256:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24057.00 	4979.00  	94.00    	0.00     
+discuss  	24.00    	6956.00  	227.00   	2.00     
+disagree 	1.00     	271.00   	391.00   	2.00     
+agree    	5.00     	1132.00  	1369.00  	505.00   
+
+2017-03-10 16:19:14,256:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.90     	0.80     	0.80     	0.80     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.91     	0.49     	0.72     	0.59     
+
+2017-03-10 16:19:14,257:INFO: Entity level P/R/F1: 0.49/0.72/0.59
+2017-03-10 16:19:14,257:INFO: FNC Score: 0.80
+2017-03-10 16:19:14,257:INFO: Unrelated Score: 0.40
+2017-03-10 16:19:14,257:INFO: Evaluating on development data
+2017-03-10 16:19:15,066:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5595.00  	1802.00  	18.00    	0.00     
+discuss  	43.00    	1547.00  	105.00   	5.00     
+disagree 	2.00     	102.00   	71.00    	0.00     
+agree    	7.00     	347.00   	277.00   	36.00    
+
+2017-03-10 16:19:15,066:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.86     	0.73     	0.73     	0.73     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.88     	0.38     	0.65     	0.48     
+
+2017-03-10 16:19:15,066:INFO: Entity level P/R/F1: 0.38/0.65/0.48
+2017-03-10 16:19:15,066:INFO: FNC Score: 0.74
+2017-03-10 16:19:15,066:INFO: Unrelated Score: 0.42
+2017-03-10 16:19:15,067:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:19:16,583:INFO: Epoch 17 out of 40
+2017-03-10 16:21:25,599:INFO: Evaluating on training data
+2017-03-10 16:21:28,864:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24319.00 	4717.00  	94.00    	0.00     
+discuss  	23.00    	6963.00  	220.00   	3.00     
+disagree 	1.00     	263.00   	399.00   	2.00     
+agree    	4.00     	1097.00  	1332.00  	578.00   
+
+2017-03-10 16:21:28,864:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.90     	0.81     	0.81     	0.81     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.91     	0.51     	0.73     	0.60     
+
+2017-03-10 16:21:28,864:INFO: Entity level P/R/F1: 0.51/0.73/0.60
+2017-03-10 16:21:28,864:INFO: FNC Score: 0.81
+2017-03-10 16:21:28,865:INFO: Unrelated Score: 0.40
+2017-03-10 16:21:28,865:INFO: Evaluating on development data
+2017-03-10 16:21:29,672:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5646.00  	1751.00  	18.00    	0.00     
+discuss  	45.00    	1547.00  	100.00   	8.00     
+disagree 	2.00     	107.00   	66.00    	0.00     
+agree    	4.00     	351.00   	276.00   	36.00    
+
+2017-03-10 16:21:29,672:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.73     	0.73     	0.73     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.88     	0.39     	0.65     	0.48     
+
+2017-03-10 16:21:29,672:INFO: Entity level P/R/F1: 0.39/0.65/0.48
+2017-03-10 16:21:29,672:INFO: FNC Score: 0.74
+2017-03-10 16:21:29,672:INFO: Unrelated Score: 0.42
+2017-03-10 16:21:29,672:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:21:31,213:INFO: Epoch 18 out of 40
+2017-03-10 16:23:40,071:INFO: Evaluating on training data
+2017-03-10 16:23:43,389:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24175.00 	4848.00  	107.00   	0.00     
+discuss  	17.00    	6931.00  	257.00   	4.00     
+disagree 	1.00     	226.00   	435.00   	3.00     
+agree    	4.00     	963.00   	1355.00  	689.00   
+
+2017-03-10 16:23:43,390:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.90     	0.81     	0.81     	0.81     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.91     	0.51     	0.74     	0.60     
+
+2017-03-10 16:23:43,390:INFO: Entity level P/R/F1: 0.51/0.74/0.60
+2017-03-10 16:23:43,390:INFO: FNC Score: 0.81
+2017-03-10 16:23:43,390:INFO: Unrelated Score: 0.40
+2017-03-10 16:23:43,390:INFO: Evaluating on development data
+2017-03-10 16:23:44,215:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5600.00  	1794.00  	21.00    	0.00     
+discuss  	42.00    	1539.00  	110.00   	9.00     
+disagree 	2.00     	96.00    	77.00    	0.00     
+agree    	4.00     	328.00   	281.00   	54.00    
+
+2017-03-10 16:23:44,215:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.73     	0.73     	0.73     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.88     	0.39     	0.66     	0.49     
+
+2017-03-10 16:23:44,215:INFO: Entity level P/R/F1: 0.39/0.66/0.49
+2017-03-10 16:23:44,215:INFO: FNC Score: 0.75
+2017-03-10 16:23:44,215:INFO: Unrelated Score: 0.42
+2017-03-10 16:23:44,215:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:23:45,844:INFO: Epoch 19 out of 40
+2017-03-10 16:25:54,429:INFO: Evaluating on training data
+2017-03-10 16:25:57,698:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24492.00 	4539.00  	99.00    	0.00     
+discuss  	13.00    	6957.00  	235.00   	4.00     
+disagree 	1.00     	220.00   	440.00   	4.00     
+agree    	2.00     	952.00   	1320.00  	737.00   
+
+2017-03-10 16:25:57,699:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.91     	0.82     	0.82     	0.82     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.92     	0.52     	0.75     	0.62     
+
+2017-03-10 16:25:57,699:INFO: Entity level P/R/F1: 0.52/0.75/0.62
+2017-03-10 16:25:57,699:INFO: FNC Score: 0.82
+2017-03-10 16:25:57,699:INFO: Unrelated Score: 0.40
+2017-03-10 16:25:57,699:INFO: Evaluating on development data
+2017-03-10 16:25:58,512:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5663.00  	1732.00  	20.00    	0.00     
+discuss  	52.00    	1529.00  	111.00   	8.00     
+disagree 	3.00     	93.00    	79.00    	0.00     
+agree    	5.00     	326.00   	271.00   	65.00    
+
+2017-03-10 16:25:58,512:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.74     	0.74     	0.74     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.40     	0.66     	0.49     
+
+2017-03-10 16:25:58,513:INFO: Entity level P/R/F1: 0.40/0.66/0.49
+2017-03-10 16:25:58,513:INFO: FNC Score: 0.75
+2017-03-10 16:25:58,513:INFO: Unrelated Score: 0.42
+2017-03-10 16:25:58,513:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:26:00,038:INFO: Epoch 20 out of 40
+2017-03-10 16:28:08,410:INFO: Evaluating on training data
+2017-03-10 16:28:11,725:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24512.00 	4510.00  	108.00   	0.00     
+discuss  	13.00    	6938.00  	254.00   	4.00     
+disagree 	1.00     	210.00   	450.00   	4.00     
+agree    	2.00     	850.00   	1348.00  	811.00   
+
+2017-03-10 16:28:11,726:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.91     	0.82     	0.82     	0.82     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.92     	0.53     	0.75     	0.62     
+
+2017-03-10 16:28:11,726:INFO: Entity level P/R/F1: 0.53/0.75/0.62
+2017-03-10 16:28:11,726:INFO: FNC Score: 0.83
+2017-03-10 16:28:11,726:INFO: Unrelated Score: 0.40
+2017-03-10 16:28:11,726:INFO: Evaluating on development data
+2017-03-10 16:28:12,984:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5641.00  	1753.00  	21.00    	0.00     
+discuss  	48.00    	1527.00  	115.00   	10.00    
+disagree 	2.00     	94.00    	79.00    	0.00     
+agree    	4.00     	309.00   	285.00   	69.00    
+
+2017-03-10 16:28:12,985:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.73     	0.73     	0.73     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.88     	0.39     	0.66     	0.49     
+
+2017-03-10 16:28:12,985:INFO: Entity level P/R/F1: 0.39/0.66/0.49
+2017-03-10 16:28:12,985:INFO: FNC Score: 0.75
+2017-03-10 16:28:12,985:INFO: Unrelated Score: 0.42
+2017-03-10 16:28:12,985:INFO: Epoch 21 out of 40
+2017-03-10 16:30:21,367:INFO: Evaluating on training data
+2017-03-10 16:30:24,914:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24776.00 	4254.00  	100.00   	0.00     
+discuss  	16.00    	6934.00  	256.00   	3.00     
+disagree 	1.00     	195.00   	465.00   	4.00     
+agree    	1.00     	837.00   	1305.00  	868.00   
+
+2017-03-10 16:30:24,915:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.91     	0.83     	0.83     	0.83     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.92     	0.54     	0.76     	0.63     
+
+2017-03-10 16:30:24,915:INFO: Entity level P/R/F1: 0.54/0.76/0.63
+2017-03-10 16:30:24,915:INFO: FNC Score: 0.83
+2017-03-10 16:30:24,915:INFO: Unrelated Score: 0.40
+2017-03-10 16:30:24,915:INFO: Evaluating on development data
+2017-03-10 16:30:25,788:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5680.00  	1715.00  	20.00    	0.00     
+discuss  	49.00    	1527.00  	114.00   	10.00    
+disagree 	2.00     	93.00    	80.00    	0.00     
+agree    	4.00     	309.00   	281.00   	73.00    
+
+2017-03-10 16:30:25,789:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.74     	0.74     	0.74     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.40     	0.66     	0.50     
+
+2017-03-10 16:30:25,789:INFO: Entity level P/R/F1: 0.40/0.66/0.50
+2017-03-10 16:30:25,789:INFO: FNC Score: 0.75
+2017-03-10 16:30:25,789:INFO: Unrelated Score: 0.42
+2017-03-10 16:30:25,789:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:30:27,297:INFO: Epoch 22 out of 40
+2017-03-10 16:32:35,904:INFO: Evaluating on training data
+2017-03-10 16:32:39,187:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	24990.00 	4045.00  	95.00    	0.00     
+discuss  	14.00    	6949.00  	243.00   	3.00     
+disagree 	1.00     	197.00   	463.00   	4.00     
+agree    	3.00     	797.00   	1309.00  	902.00   
+
+2017-03-10 16:32:39,188:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.92     	0.83     	0.83     	0.83     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.92     	0.55     	0.76     	0.64     
+
+2017-03-10 16:32:39,188:INFO: Entity level P/R/F1: 0.55/0.76/0.64
+2017-03-10 16:32:39,188:INFO: FNC Score: 0.84
+2017-03-10 16:32:39,188:INFO: Unrelated Score: 0.40
+2017-03-10 16:32:39,188:INFO: Evaluating on development data
+2017-03-10 16:32:40,005:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5742.00  	1651.00  	22.00    	0.00     
+discuss  	49.00    	1526.00  	115.00   	10.00    
+disagree 	2.00     	94.00    	79.00    	0.00     
+agree    	4.00     	303.00   	287.00   	73.00    
+
+2017-03-10 16:32:40,006:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.75     	0.75     	0.75     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.40     	0.66     	0.50     
+
+2017-03-10 16:32:40,006:INFO: Entity level P/R/F1: 0.40/0.66/0.50
+2017-03-10 16:32:40,006:INFO: FNC Score: 0.75
+2017-03-10 16:32:40,006:INFO: Unrelated Score: 0.42
+2017-03-10 16:32:40,006:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:32:41,573:INFO: Epoch 23 out of 40
+2017-03-10 16:34:50,023:INFO: Evaluating on training data
+2017-03-10 16:34:53,714:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25028.00 	4008.00  	94.00    	0.00     
+discuss  	12.00    	6944.00  	250.00   	3.00     
+disagree 	1.00     	187.00   	473.00   	4.00     
+agree    	1.00     	749.00   	1304.00  	957.00   
+
+2017-03-10 16:34:53,714:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.92     	0.83     	0.83     	0.83     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.92     	0.56     	0.77     	0.65     
+
+2017-03-10 16:34:53,714:INFO: Entity level P/R/F1: 0.56/0.77/0.65
+2017-03-10 16:34:53,714:INFO: FNC Score: 0.84
+2017-03-10 16:34:53,714:INFO: Unrelated Score: 0.40
+2017-03-10 16:34:53,714:INFO: Evaluating on development data
+2017-03-10 16:34:54,528:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5740.00  	1652.00  	23.00    	0.00     
+discuss  	48.00    	1519.00  	121.00   	12.00    
+disagree 	2.00     	93.00    	80.00    	0.00     
+agree    	4.00     	296.00   	287.00   	80.00    
+
+2017-03-10 16:34:54,528:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.75     	0.75     	0.75     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.40     	0.66     	0.50     
+
+2017-03-10 16:34:54,528:INFO: Entity level P/R/F1: 0.40/0.66/0.50
+2017-03-10 16:34:54,529:INFO: FNC Score: 0.75
+2017-03-10 16:34:54,529:INFO: Unrelated Score: 0.42
+2017-03-10 16:34:54,529:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:34:56,016:INFO: Epoch 24 out of 40
+2017-03-10 16:37:04,490:INFO: Evaluating on training data
+2017-03-10 16:37:07,777:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25088.00 	3946.00  	96.00    	0.00     
+discuss  	10.00    	6953.00  	243.00   	3.00     
+disagree 	0.00     	176.00   	484.00   	5.00     
+agree    	0.00     	679.00   	1329.00  	1003.00  
+
+2017-03-10 16:37:07,778:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.92     	0.84     	0.84     	0.84     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.57     	0.78     	0.65     
+
+2017-03-10 16:37:07,778:INFO: Entity level P/R/F1: 0.57/0.78/0.65
+2017-03-10 16:37:07,778:INFO: FNC Score: 0.84
+2017-03-10 16:37:07,778:INFO: Unrelated Score: 0.40
+2017-03-10 16:37:07,778:INFO: Evaluating on development data
+2017-03-10 16:37:08,595:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5741.00  	1651.00  	23.00    	0.00     
+discuss  	45.00    	1519.00  	124.00   	12.00    
+disagree 	2.00     	94.00    	79.00    	0.00     
+agree    	4.00     	291.00   	286.00   	86.00    
+
+2017-03-10 16:37:08,596:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.75     	0.75     	0.75     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.40     	0.66     	0.50     
+
+2017-03-10 16:37:08,596:INFO: Entity level P/R/F1: 0.40/0.66/0.50
+2017-03-10 16:37:08,596:INFO: FNC Score: 0.76
+2017-03-10 16:37:08,596:INFO: Unrelated Score: 0.42
+2017-03-10 16:37:08,596:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:37:10,110:INFO: Epoch 25 out of 40
+2017-03-10 16:39:18,369:INFO: Evaluating on training data
+2017-03-10 16:39:21,709:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25276.00 	3763.00  	91.00    	0.00     
+discuss  	10.00    	6944.00  	251.00   	4.00     
+disagree 	0.00     	177.00   	481.00   	7.00     
+agree    	0.00     	704.00   	1260.00  	1047.00  
+
+2017-03-10 16:39:21,710:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.92     	0.84     	0.84     	0.84     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.58     	0.78     	0.66     
+
+2017-03-10 16:39:21,710:INFO: Entity level P/R/F1: 0.58/0.78/0.66
+2017-03-10 16:39:21,710:INFO: FNC Score: 0.85
+2017-03-10 16:39:21,710:INFO: Unrelated Score: 0.40
+2017-03-10 16:39:21,710:INFO: Evaluating on development data
+2017-03-10 16:39:22,945:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5787.00  	1605.00  	23.00    	0.00     
+discuss  	51.00    	1515.00  	122.00   	12.00    
+disagree 	4.00     	91.00    	80.00    	0.00     
+agree    	4.00     	282.00   	293.00   	88.00    
+
+2017-03-10 16:39:22,946:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.75     	0.75     	0.75     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.41     	0.66     	0.51     
+
+2017-03-10 16:39:22,946:INFO: Entity level P/R/F1: 0.41/0.66/0.51
+2017-03-10 16:39:22,946:INFO: FNC Score: 0.76
+2017-03-10 16:39:22,946:INFO: Unrelated Score: 0.42
+2017-03-10 16:39:22,946:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:39:24,453:INFO: Epoch 26 out of 40
+2017-03-10 16:41:33,354:INFO: Evaluating on training data
+2017-03-10 16:41:36,621:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25330.00 	3711.00  	88.00    	1.00     
+discuss  	11.00    	6946.00  	248.00   	4.00     
+disagree 	0.00     	161.00   	496.00   	8.00     
+agree    	0.00     	648.00   	1282.00  	1081.00  
+
+2017-03-10 16:41:36,622:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.92     	0.85     	0.85     	0.85     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.58     	0.78     	0.67     
+
+2017-03-10 16:41:36,622:INFO: Entity level P/R/F1: 0.58/0.78/0.67
+2017-03-10 16:41:36,622:INFO: FNC Score: 0.85
+2017-03-10 16:41:36,622:INFO: Unrelated Score: 0.40
+2017-03-10 16:41:36,622:INFO: Evaluating on development data
+2017-03-10 16:41:37,434:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5770.00  	1623.00  	22.00    	0.00     
+discuss  	47.00    	1515.00  	126.00   	12.00    
+disagree 	2.00     	92.00    	81.00    	0.00     
+agree    	4.00     	278.00   	292.00   	93.00    
+
+2017-03-10 16:41:37,435:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.87     	0.75     	0.75     	0.75     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.41     	0.66     	0.51     
+
+2017-03-10 16:41:37,435:INFO: Entity level P/R/F1: 0.41/0.66/0.51
+2017-03-10 16:41:37,435:INFO: FNC Score: 0.76
+2017-03-10 16:41:37,435:INFO: Unrelated Score: 0.42
+2017-03-10 16:41:37,435:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:41:38,932:INFO: Epoch 27 out of 40
+2017-03-10 16:43:47,367:INFO: Evaluating on training data
+2017-03-10 16:43:50,680:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25737.00 	3314.00  	78.00    	1.00     
+discuss  	14.00    	6964.00  	227.00   	4.00     
+disagree 	1.00     	165.00   	493.00   	6.00     
+agree    	0.00     	649.00   	1279.00  	1083.00  
+
+2017-03-10 16:43:50,681:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.93     	0.86     	0.86     	0.86     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.60     	0.78     	0.68     
+
+2017-03-10 16:43:50,681:INFO: Entity level P/R/F1: 0.60/0.78/0.68
+2017-03-10 16:43:50,681:INFO: FNC Score: 0.86
+2017-03-10 16:43:50,681:INFO: Unrelated Score: 0.40
+2017-03-10 16:43:50,681:INFO: Evaluating on development data
+2017-03-10 16:43:51,489:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5875.00  	1519.00  	21.00    	0.00     
+discuss  	54.00    	1512.00  	122.00   	12.00    
+disagree 	2.00     	92.00    	80.00    	1.00     
+agree    	4.00     	284.00   	287.00   	92.00    
+
+2017-03-10 16:43:51,489:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.51     
+
+2017-03-10 16:43:51,489:INFO: Entity level P/R/F1: 0.42/0.66/0.51
+2017-03-10 16:43:51,489:INFO: FNC Score: 0.76
+2017-03-10 16:43:51,489:INFO: Unrelated Score: 0.42
+2017-03-10 16:43:51,490:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:43:53,006:INFO: Epoch 28 out of 40
+2017-03-10 16:46:01,890:INFO: Evaluating on training data
+2017-03-10 16:46:05,185:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25709.00 	3337.00  	83.00    	1.00     
+discuss  	11.00    	6974.00  	220.00   	4.00     
+disagree 	0.00     	149.00   	509.00   	7.00     
+agree    	0.00     	611.00   	1268.00  	1132.00  
+
+2017-03-10 16:46:05,186:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.93     	0.86     	0.86     	0.86     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.60     	0.79     	0.68     
+
+2017-03-10 16:46:05,186:INFO: Entity level P/R/F1: 0.60/0.79/0.68
+2017-03-10 16:46:05,186:INFO: FNC Score: 0.86
+2017-03-10 16:46:05,186:INFO: Unrelated Score: 0.40
+2017-03-10 16:46:05,186:INFO: Evaluating on development data
+2017-03-10 16:46:06,015:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5846.00  	1550.00  	19.00    	0.00     
+discuss  	51.00    	1513.00  	124.00   	12.00    
+disagree 	2.00     	89.00    	84.00    	0.00     
+agree    	2.00     	277.00   	295.00   	93.00    
+
+2017-03-10 16:46:06,015:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.51     
+
+2017-03-10 16:46:06,015:INFO: Entity level P/R/F1: 0.42/0.66/0.51
+2017-03-10 16:46:06,015:INFO: FNC Score: 0.76
+2017-03-10 16:46:06,016:INFO: Unrelated Score: 0.42
+2017-03-10 16:46:06,016:INFO: Epoch 29 out of 40
+2017-03-10 16:48:14,826:INFO: Evaluating on training data
+2017-03-10 16:48:18,130:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25798.00 	3250.00  	81.00    	1.00     
+discuss  	12.00    	6965.00  	228.00   	4.00     
+disagree 	0.00     	147.00   	511.00   	7.00     
+agree    	0.00     	573.00   	1274.00  	1164.00  
+
+2017-03-10 16:48:18,131:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.93     	0.86     	0.86     	0.86     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.93     	0.61     	0.79     	0.69     
+
+2017-03-10 16:48:18,131:INFO: Entity level P/R/F1: 0.61/0.79/0.69
+2017-03-10 16:48:18,131:INFO: FNC Score: 0.86
+2017-03-10 16:48:18,131:INFO: Unrelated Score: 0.40
+2017-03-10 16:48:18,131:INFO: Evaluating on development data
+2017-03-10 16:48:18,950:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5865.00  	1528.00  	22.00    	0.00     
+discuss  	52.00    	1506.00  	130.00   	12.00    
+disagree 	2.00     	87.00    	86.00    	0.00     
+agree    	2.00     	278.00   	287.00   	100.00   
+
+2017-03-10 16:48:18,950:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.51     
+
+2017-03-10 16:48:18,950:INFO: Entity level P/R/F1: 0.42/0.67/0.51
+2017-03-10 16:48:18,950:INFO: FNC Score: 0.76
+2017-03-10 16:48:18,950:INFO: Unrelated Score: 0.42
+2017-03-10 16:48:18,951:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:48:20,450:INFO: Epoch 30 out of 40
+2017-03-10 16:50:29,041:INFO: Evaluating on training data
+2017-03-10 16:50:32,462:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25734.00 	3314.00  	81.00    	1.00     
+discuss  	12.00    	6954.00  	238.00   	5.00     
+disagree 	0.00     	132.00   	526.00   	7.00     
+agree    	0.00     	548.00   	1223.00  	1240.00  
+
+2017-03-10 16:50:32,463:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.93     	0.86     	0.86     	0.86     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.61     	0.80     	0.69     
+
+2017-03-10 16:50:32,463:INFO: Entity level P/R/F1: 0.61/0.80/0.69
+2017-03-10 16:50:32,463:INFO: FNC Score: 0.86
+2017-03-10 16:50:32,463:INFO: Unrelated Score: 0.40
+2017-03-10 16:50:32,463:INFO: Evaluating on development data
+2017-03-10 16:50:33,308:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5823.00  	1570.00  	22.00    	0.00     
+discuss  	47.00    	1509.00  	130.00   	14.00    
+disagree 	2.00     	87.00    	84.00    	2.00     
+agree    	2.00     	271.00   	285.00   	109.00   
+
+2017-03-10 16:50:33,309:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.51     
+
+2017-03-10 16:50:33,309:INFO: Entity level P/R/F1: 0.42/0.67/0.51
+2017-03-10 16:50:33,309:INFO: FNC Score: 0.76
+2017-03-10 16:50:33,309:INFO: Unrelated Score: 0.42
+2017-03-10 16:50:33,309:INFO: Epoch 31 out of 40
+2017-03-10 16:52:42,145:INFO: Evaluating on training data
+2017-03-10 16:52:45,462:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	25984.00 	3067.00  	78.00    	1.00     
+discuss  	14.00    	6961.00  	229.00   	5.00     
+disagree 	0.00     	136.00   	521.00   	8.00     
+agree    	0.00     	547.00   	1215.00  	1249.00  
+
+2017-03-10 16:52:45,463:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.93     	0.87     	0.87     	0.87     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.62     	0.80     	0.70     
+
+2017-03-10 16:52:45,463:INFO: Entity level P/R/F1: 0.62/0.80/0.70
+2017-03-10 16:52:45,463:INFO: FNC Score: 0.87
+2017-03-10 16:52:45,463:INFO: Unrelated Score: 0.40
+2017-03-10 16:52:45,463:INFO: Evaluating on development data
+2017-03-10 16:52:46,282:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5862.00  	1534.00  	19.00    	0.00     
+discuss  	53.00    	1506.00  	127.00   	14.00    
+disagree 	2.00     	88.00    	80.00    	5.00     
+agree    	3.00     	270.00   	289.00   	105.00   
+
+2017-03-10 16:52:46,282:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.51     
+
+2017-03-10 16:52:46,282:INFO: Entity level P/R/F1: 0.42/0.67/0.51
+2017-03-10 16:52:46,282:INFO: FNC Score: 0.76
+2017-03-10 16:52:46,282:INFO: Unrelated Score: 0.42
+2017-03-10 16:52:46,283:INFO: Epoch 32 out of 40
+2017-03-10 16:54:54,699:INFO: Evaluating on training data
+2017-03-10 16:54:57,991:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26123.00 	2934.00  	72.00    	1.00     
+discuss  	12.00    	6972.00  	221.00   	4.00     
+disagree 	0.00     	134.00   	525.00   	6.00     
+agree    	0.00     	513.00   	1240.00  	1258.00  
+
+2017-03-10 16:54:57,992:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.87     	0.87     	0.87     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.63     	0.80     	0.71     
+
+2017-03-10 16:54:57,992:INFO: Entity level P/R/F1: 0.63/0.80/0.71
+2017-03-10 16:54:57,992:INFO: FNC Score: 0.87
+2017-03-10 16:54:57,992:INFO: Unrelated Score: 0.40
+2017-03-10 16:54:57,992:INFO: Evaluating on development data
+2017-03-10 16:54:58,803:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5900.00  	1497.00  	18.00    	0.00     
+discuss  	51.00    	1512.00  	123.00   	14.00    
+disagree 	2.00     	89.00    	81.00    	3.00     
+agree    	2.00     	271.00   	286.00   	108.00   
+
+2017-03-10 16:54:58,803:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.43     	0.67     	0.52     
+
+2017-03-10 16:54:58,803:INFO: Entity level P/R/F1: 0.43/0.67/0.52
+2017-03-10 16:54:58,803:INFO: FNC Score: 0.77
+2017-03-10 16:54:58,803:INFO: Unrelated Score: 0.42
+2017-03-10 16:54:58,803:INFO: New best score! Saving model in results/20170310_154253_300d_1d_bag_of_words_te_41/model.weights
+2017-03-10 16:55:00,317:INFO: Epoch 33 out of 40
+2017-03-10 16:57:09,089:INFO: Evaluating on training data
+2017-03-10 16:57:12,448:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26059.00 	2995.00  	75.00    	1.00     
+discuss  	10.00    	6967.00  	227.00   	5.00     
+disagree 	0.00     	127.00   	529.00   	9.00     
+agree    	0.00     	510.00   	1187.00  	1314.00  
+
+2017-03-10 16:57:12,448:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.87     	0.87     	0.87     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.63     	0.81     	0.71     
+
+2017-03-10 16:57:12,449:INFO: Entity level P/R/F1: 0.63/0.81/0.71
+2017-03-10 16:57:12,449:INFO: FNC Score: 0.87
+2017-03-10 16:57:12,449:INFO: Unrelated Score: 0.40
+2017-03-10 16:57:12,449:INFO: Evaluating on development data
+2017-03-10 16:57:13,276:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5855.00  	1541.00  	19.00    	0.00     
+discuss  	50.00    	1504.00  	132.00   	14.00    
+disagree 	2.00     	83.00    	87.00    	3.00     
+agree    	2.00     	266.00   	292.00   	107.00   
+
+2017-03-10 16:57:13,277:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.52     
+
+2017-03-10 16:57:13,277:INFO: Entity level P/R/F1: 0.42/0.67/0.52
+2017-03-10 16:57:13,277:INFO: FNC Score: 0.76
+2017-03-10 16:57:13,277:INFO: Unrelated Score: 0.42
+2017-03-10 16:57:13,277:INFO: Epoch 34 out of 40
+2017-03-10 16:59:21,680:INFO: Evaluating on training data
+2017-03-10 16:59:25,482:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26193.00 	2862.00  	74.00    	1.00     
+discuss  	9.00     	6968.00  	227.00   	5.00     
+disagree 	0.00     	128.00   	529.00   	8.00     
+agree    	0.00     	492.00   	1178.00  	1341.00  
+
+2017-03-10 16:59:25,482:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.88     	0.88     	0.88     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.64     	0.81     	0.72     
+
+2017-03-10 16:59:25,482:INFO: Entity level P/R/F1: 0.64/0.81/0.72
+2017-03-10 16:59:25,482:INFO: FNC Score: 0.87
+2017-03-10 16:59:25,482:INFO: Unrelated Score: 0.40
+2017-03-10 16:59:25,483:INFO: Evaluating on development data
+2017-03-10 16:59:26,317:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5873.00  	1523.00  	19.00    	0.00     
+discuss  	55.00    	1497.00  	134.00   	14.00    
+disagree 	2.00     	84.00    	82.00    	7.00     
+agree    	2.00     	258.00   	291.00   	116.00   
+
+2017-03-10 16:59:26,317:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.52     
+
+2017-03-10 16:59:26,318:INFO: Entity level P/R/F1: 0.42/0.67/0.52
+2017-03-10 16:59:26,318:INFO: FNC Score: 0.76
+2017-03-10 16:59:26,318:INFO: Unrelated Score: 0.42
+2017-03-10 16:59:26,318:INFO: Epoch 35 out of 40
+2017-03-10 17:01:35,385:INFO: Evaluating on training data
+2017-03-10 17:01:38,657:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26282.00 	2776.00  	71.00    	1.00     
+discuss  	9.00     	6974.00  	222.00   	4.00     
+disagree 	0.00     	122.00   	540.00   	3.00     
+agree    	0.00     	464.00   	1196.00  	1351.00  
+
+2017-03-10 17:01:38,657:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.88     	0.88     	0.88     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.65     	0.81     	0.72     
+
+2017-03-10 17:01:38,657:INFO: Entity level P/R/F1: 0.65/0.81/0.72
+2017-03-10 17:01:38,657:INFO: FNC Score: 0.88
+2017-03-10 17:01:38,657:INFO: Unrelated Score: 0.40
+2017-03-10 17:01:38,658:INFO: Evaluating on development data
+2017-03-10 17:01:39,468:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5888.00  	1510.00  	17.00    	0.00     
+discuss  	49.00    	1501.00  	136.00   	14.00    
+disagree 	2.00     	86.00    	84.00    	3.00     
+agree    	2.00     	261.00   	295.00   	109.00   
+
+2017-03-10 17:01:39,469:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.52     
+
+2017-03-10 17:01:39,469:INFO: Entity level P/R/F1: 0.42/0.67/0.52
+2017-03-10 17:01:39,469:INFO: FNC Score: 0.77
+2017-03-10 17:01:39,469:INFO: Unrelated Score: 0.42
+2017-03-10 17:01:39,469:INFO: Epoch 36 out of 40
+2017-03-10 18:00:36,302:INFO: Evaluating on training data
+2017-03-10 18:00:39,629:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26338.00 	2718.00  	73.00    	1.00     
+discuss  	11.00    	6967.00  	226.00   	5.00     
+disagree 	0.00     	119.00   	538.00   	8.00     
+agree    	0.00     	475.00   	1137.00  	1399.00  
+
+2017-03-10 18:00:39,629:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.88     	0.88     	0.88     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.94     	0.65     	0.82     	0.73     
+
+2017-03-10 18:00:39,629:INFO: Entity level P/R/F1: 0.65/0.82/0.73
+2017-03-10 18:00:39,629:INFO: FNC Score: 0.88
+2017-03-10 18:00:39,629:INFO: Unrelated Score: 0.40
+2017-03-10 18:00:39,630:INFO: Evaluating on development data
+2017-03-10 18:00:40,448:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5911.00  	1487.00  	17.00    	0.00     
+discuss  	50.00    	1498.00  	138.00   	14.00    
+disagree 	2.00     	85.00    	81.00    	7.00     
+agree    	3.00     	255.00   	296.00   	113.00   
+
+2017-03-10 18:00:40,449:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.67     	0.52     
+
+2017-03-10 18:00:40,449:INFO: Entity level P/R/F1: 0.42/0.67/0.52
+2017-03-10 18:00:40,449:INFO: FNC Score: 0.77
+2017-03-10 18:00:40,449:INFO: Unrelated Score: 0.42
+2017-03-10 18:00:40,449:INFO: Epoch 37 out of 40
+2017-03-10 18:02:49,751:INFO: Evaluating on training data
+2017-03-10 18:02:53,590:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26471.00 	2592.00  	66.00    	1.00     
+discuss  	12.00    	6988.00  	206.00   	3.00     
+disagree 	0.00     	119.00   	538.00   	8.00     
+agree    	0.00     	452.00   	1153.00  	1406.00  
+
+2017-03-10 18:02:53,590:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.88     	0.88     	0.88     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.95     	0.66     	0.82     	0.73     
+
+2017-03-10 18:02:53,590:INFO: Entity level P/R/F1: 0.66/0.82/0.73
+2017-03-10 18:02:53,590:INFO: FNC Score: 0.88
+2017-03-10 18:02:53,590:INFO: Unrelated Score: 0.40
+2017-03-10 18:02:53,591:INFO: Evaluating on development data
+2017-03-10 18:02:54,418:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5931.00  	1469.00  	15.00    	0.00     
+discuss  	56.00    	1497.00  	133.00   	14.00    
+disagree 	2.00     	86.00    	82.00    	5.00     
+agree    	2.00     	263.00   	297.00   	105.00   
+
+2017-03-10 18:02:54,419:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.52     
+
+2017-03-10 18:02:54,419:INFO: Entity level P/R/F1: 0.42/0.66/0.52
+2017-03-10 18:02:54,419:INFO: FNC Score: 0.77
+2017-03-10 18:02:54,419:INFO: Unrelated Score: 0.42
+2017-03-10 18:02:54,419:INFO: Epoch 38 out of 40
+2017-03-10 18:05:03,220:INFO: Evaluating on training data
+2017-03-10 18:05:06,593:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26509.00 	2556.00  	64.00    	1.00     
+discuss  	11.00    	6982.00  	213.00   	3.00     
+disagree 	0.00     	112.00   	546.00   	7.00     
+agree    	0.00     	441.00   	1121.00  	1449.00  
+
+2017-03-10 18:05:06,593:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.89     	0.89     	0.89     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.95     	0.67     	0.82     	0.74     
+
+2017-03-10 18:05:06,593:INFO: Entity level P/R/F1: 0.67/0.82/0.74
+2017-03-10 18:05:06,593:INFO: FNC Score: 0.89
+2017-03-10 18:05:06,593:INFO: Unrelated Score: 0.40
+2017-03-10 18:05:06,594:INFO: Evaluating on development data
+2017-03-10 18:05:07,425:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5927.00  	1472.00  	16.00    	0.00     
+discuss  	61.00    	1488.00  	136.00   	15.00    
+disagree 	2.00     	86.00    	80.00    	7.00     
+agree    	3.00     	255.00   	304.00   	105.00   
+
+2017-03-10 18:05:07,426:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.51     
+
+2017-03-10 18:05:07,426:INFO: Entity level P/R/F1: 0.42/0.66/0.51
+2017-03-10 18:05:07,426:INFO: FNC Score: 0.76
+2017-03-10 18:05:07,426:INFO: Unrelated Score: 0.42
+2017-03-10 18:05:07,426:INFO: Epoch 39 out of 40
+2017-03-10 18:07:16,282:INFO: Evaluating on training data
+2017-03-10 18:07:19,641:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26471.00 	2590.00  	68.00    	1.00     
+discuss  	9.00     	6963.00  	233.00   	4.00     
+disagree 	0.00     	104.00   	554.00   	7.00     
+agree    	0.00     	400.00   	1102.00  	1509.00  
+
+2017-03-10 18:07:19,641:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.94     	0.89     	0.89     	0.89     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.95     	0.67     	0.83     	0.74     
+
+2017-03-10 18:07:19,641:INFO: Entity level P/R/F1: 0.67/0.83/0.74
+2017-03-10 18:07:19,641:INFO: FNC Score: 0.89
+2017-03-10 18:07:19,641:INFO: Unrelated Score: 0.40
+2017-03-10 18:07:19,642:INFO: Evaluating on development data
+2017-03-10 18:07:20,486:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5879.00  	1520.00  	16.00    	0.00     
+discuss  	54.00    	1489.00  	142.00   	15.00    
+disagree 	2.00     	82.00    	84.00    	7.00     
+agree    	1.00     	247.00   	304.00   	115.00   
+
+2017-03-10 18:07:20,486:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.51     
+
+2017-03-10 18:07:20,486:INFO: Entity level P/R/F1: 0.42/0.66/0.51
+2017-03-10 18:07:20,486:INFO: FNC Score: 0.76
+2017-03-10 18:07:20,486:INFO: Unrelated Score: 0.42
+2017-03-10 18:07:20,486:INFO: Epoch 40 out of 40
+2017-03-10 18:09:29,250:INFO: Evaluating on training data
+2017-03-10 18:09:32,658:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	26567.00 	2499.00  	63.00    	1.00     
+discuss  	9.00     	6976.00  	220.00   	4.00     
+disagree 	0.00     	102.00   	556.00   	7.00     
+agree    	0.00     	395.00   	1082.00  	1534.00  
+
+2017-03-10 18:09:32,658:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.95     	0.89     	0.89     	0.89     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.95     	0.67     	0.83     	0.75     
+
+2017-03-10 18:09:32,658:INFO: Entity level P/R/F1: 0.67/0.83/0.75
+2017-03-10 18:09:32,658:INFO: FNC Score: 0.89
+2017-03-10 18:09:32,658:INFO: Unrelated Score: 0.40
+2017-03-10 18:09:32,659:INFO: Evaluating on development data
+2017-03-10 18:09:33,499:DEBUG: Token-level confusion matrix:
+go\gu    	unrelated	discuss  	disagree 	agree    
+unrelated	5931.00  	1469.00  	15.00    	0.00     
+discuss  	55.00    	1486.00  	143.00   	16.00    
+disagree 	2.00     	82.00    	84.00    	7.00     
+agree    	2.00     	247.00   	307.00   	111.00   
+
+2017-03-10 18:09:33,499:DEBUG: Token-level scores:
+label    	acc      	prec     	rec      	f1       
+unrelated	0.00     	0.00     	0.00     	0.00     
+discuss  	0.00     	0.00     	0.00     	0.00     
+disagree 	0.00     	0.00     	0.00     	0.00     
+agree    	0.00     	0.00     	0.00     	0.00     
+micro    	0.88     	0.76     	0.76     	0.76     
+macro    	0.00     	0.00     	0.00     	0.00     
+not-O    	0.89     	0.42     	0.66     	0.52     
+
+2017-03-10 18:09:33,499:INFO: Entity level P/R/F1: 0.42/0.66/0.52
+2017-03-10 18:09:33,499:INFO: FNC Score: 0.77
+2017-03-10 18:09:33,499:INFO: Unrelated Score: 0.42
+2017-03-10 18:09:33,499:INFO: Outputting ...
