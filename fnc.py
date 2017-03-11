@@ -406,8 +406,9 @@ class FNCModel(Model):
         self.max_headline_len = max_headline_len
         self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
-        self.headlines_pc = tf.constant(headlines_pc, dtype=tf.float32)
-        self.bodies_pc = tf.constant(bodies_pc, dtype=tf.float32)
+        if self.config.method == "arora":
+            self.headlines_pc = tf.constant(headlines_pc, dtype=tf.float32)
+            self.bodies_pc = tf.constant(bodies_pc, dtype=tf.float32)
 
         # Defining placeholders.
         self.headlines_placeholder = None
@@ -451,6 +452,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_headline_len)
     body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
         known_words, max_body_len)
+    headlines_pc = bodies_pc = None
     if config.method == "arora":
         headlines_pc = util.arora_embeddings_pc(headline_vectors,
             embeddings)
