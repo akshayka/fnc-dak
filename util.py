@@ -67,7 +67,8 @@ class ConfusionMatrix(object):
             default_label : int
         """
         self.labels = labels
-        self.default_label = default_label if default_label is not None else len(labels) -1
+        self.default_label = default_label if default_label is not None else \
+            len(labels) -1
         self.counts = defaultdict(Counter)
 
     def update(self, gold, guess):
@@ -77,7 +78,8 @@ class ConfusionMatrix(object):
     def as_table(self):
         """Print tables"""
         # Header
-        data = [[self.counts[l][l_] for l_,_ in enumerate(self.labels)] for l,_ in enumerate(self.labels)]
+        data = [[self.counts[l][l_] for l_,_ in enumerate(self.labels)] \
+            for l,_ in enumerate(self.labels)]
         return to_table(data, self.labels, ["go\\gu"] + self.labels)
 
     def summary(self, quiet=False):
@@ -90,7 +92,8 @@ class ConfusionMatrix(object):
         for l in keys:
             tp = self.counts[l][l]
             fp = sum(self.counts[l_][l] for l_ in keys if l_ != l)
-            tn = sum(self.counts[l_][l__] for l_ in keys if l_ != l for l__ in keys if l__ != l)
+            tn = sum(self.counts[l_][l__] for l_ in keys if l_ != l for l__ in 
+                keys if l__ != l)
             fn = sum(self.counts[l][l_] for l_ in keys if l_ != l)
 
             acc = (tp + tn)/(tp + tn + fp + fn) if tp > 0  else 0
@@ -101,7 +104,8 @@ class ConfusionMatrix(object):
             # update micro/macro averages
             micro += np.array([tp, fp, tn, fn])
             macro += np.array([acc, prec, rec, f1])
-            if l != self.default_label: # Count count for everything that is not the default label!
+            if l != self.default_label: # Count count for everything that is not
+                                        # the default label!
                 default += np.array([tp, fp, tn, fn])
 
             data.append([acc, prec, rec, f1])
@@ -125,7 +129,8 @@ class ConfusionMatrix(object):
         data.append([acc, prec, rec, f1])
 
         # Macro and micro average.
-        return to_table(data, self.labels + ["micro","macro","not-O"], ["label", "acc", "prec", "rec", "f1"])
+        return to_table(data, self.labels + ["micro","macro","not-O"], ["label",
+            "acc", "prec", "rec", "f1"])
 
 # -------------- Utilities for running epochs ---------------
 class Progbar(object):
@@ -162,7 +167,8 @@ class Progbar(object):
 
         for k, v in values:
             if k not in self.sum_values:
-                self.sum_values[k] = [v * (current - self.seen_so_far), current - self.seen_so_far]
+                self.sum_values[k] = [v * (current - self.seen_so_far), (current
+                     - self.seen_so_far)]
                 self.unique_values.append(k)
             else:
                 self.sum_values[k][0] += v * (current - self.seen_so_far)
@@ -207,7 +213,8 @@ class Progbar(object):
                 info += ' - %ds' % (now - self.start)
             for k in self.unique_values:
                 if isinstance(self.sum_values[k], list):
-                    info += ' - %s: %.4f' % (k, self.sum_values[k][0] / max(1, self.sum_values[k][1]))
+                    info += ' - %s: %.4f' % (k, self.sum_values[k][0] / max(1, 
+                        self.sum_values[k][1]))
                 else:
                     info += ' - %s: %s' % (k, self.sum_values[k])
 
@@ -225,7 +232,8 @@ class Progbar(object):
             if current >= self.target:
                 info = '%ds' % (now - self.start)
                 for k in self.unique_values:
-                    info += ' - %s: %.4f' % (k, self.sum_values[k][0] / max(1, self.sum_values[k][1]))
+                    info += ' - %s: %.4f' % (k, self.sum_values[k][0] / max(1, 
+                        self.sum_values[k][1]))
                 sys.stdout.write(info + "\n")
 
     def add(self, n, values=None):
@@ -235,15 +243,16 @@ class Progbar(object):
 # TODO(akshayka): Balanced minibatches
 def get_minibatches(data, minibatch_size, shuffle=True):
     """
-    Iterates through the provided data one minibatch at at time. You can use this function to
-    iterate through data in minibatches as follows:
+    Iterates through the provided data one minibatch at at time. You can use 
+    this function to iterate through data in minibatches as follows:
 
         for inputs_minibatch in get_minibatches(inputs, minibatch_size):
             ...
 
     Or with multiple data sources:
 
-        for inputs_minibatch, labels_minibatch in get_minibatches([inputs, labels], minibatch_size):
+        for inputs_minibatch, labels_minibatch in get_minibatches([inputs, 
+            labels], minibatch_size):
             ...
 
     Args:
@@ -255,24 +264,27 @@ def get_minibatches(data, minibatch_size, shuffle=True):
     Returns:
         minibatches: the return value depends on data:
             - If data is a list/array it yields the next minibatch of data.
-            - If data a list of lists/arrays it returns the next minibatch of each element in the
-              list. This can be used to iterate through multiple data sources
-              (e.g., features and labels) at the same time.
+            - If data a list of lists/arrays it returns the next minibatch of 
+            each element in the list. This can be used to iterate through 
+            multiple data sources (e.g., features and labels) at the same time.
 
     """
-    list_data = type(data) is list and (type(data[0]) is list or type(data[0]) is np.ndarray)
+    list_data = type(data) is list and (type(data[0]) is list or type(data[0]) 
+        is np.ndarray)
     data_size = len(data[0]) if list_data else len(data)
     indices = np.arange(data_size)
     if shuffle:
         np.random.shuffle(indices)
     for minibatch_start in np.arange(0, data_size, minibatch_size):
-        minibatch_indices = indices[minibatch_start:minibatch_start + minibatch_size]
+        minibatch_indices = indices[minibatch_start:(minibatch_start + 
+            minibatch_size)]
         yield [minibatch(d, minibatch_indices) for d in data] if list_data \
             else minibatch(data, minibatch_indices)
 
 
 def minibatch(data, minibatch_idx):
-    return data[minibatch_idx] if type(data) is np.ndarray else [data[i] for i in minibatch_idx]
+    return data[minibatch_idx] if type(data) is np.ndarray else [data[i] \
+        for i in minibatch_idx]
 
 
 def minibatches(data, batch_size, shuffle=True):
@@ -283,6 +295,8 @@ def minibatches(data, batch_size, shuffle=True):
 # ---------------- Utilities for data processing -------------
 PAD_TOKEN = "___PPPADDD___"
 
+# def cosine_similarity(bodies, headlines):
+    
 
 # Taken from Arora's code: https://github.com/YingyuLiang/SIF/
 def get_word_weights(weightfile, a=1e-3):
