@@ -342,6 +342,7 @@ def load_embeddings(word_indices, dimension=300,
     glove_words = set([])
     weights = None if not weight_embeddings else \
         get_word_weights("aux_data/enwiki_vocab_min200.txt")
+    words_without_weights = 0
     with open(embedding_path, 'rb') as fstream:
         for line in fstream:
             line = line.strip()
@@ -356,7 +357,7 @@ def load_embeddings(word_indices, dimension=300,
                 if word in weights:
                     data = weights[word] * data
                 else:
-                    logging.warning("No weight entry for word %s", word)
+                    words_without_weights += 1
             if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
@@ -370,6 +371,8 @@ def load_embeddings(word_indices, dimension=300,
     if len(unk) > 0:
         logging.warning("%d unknown words out of %d total", len(unk),
             len(word_indices))
+    if words_without_weights > 0:
+        logging.warning("%d words do not have weights", words_without_weights)
     known_words = our_words.intersection(glove_words)
     return embeddings, known_words
         

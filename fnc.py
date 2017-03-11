@@ -526,7 +526,7 @@ if __name__ == "__main__":
         help="Dropout probability")
     command_parser.add_argument("-r", "--regularizer", type=str, default=None,
         help="Regularizer to apply; one of l1 or l2")
-    command_parser.add_argument("-p", "--penalty", type=float, default=0.05,
+    command_parser.add_argument("-p", "--penalty", type=float, default=1e-6,
         help="Regularization; ignored if regularizer is None")
     command_parser.add_argument("-ne", "--n_epochs", type=int, default=10,
         help="Number of training epochs.")
