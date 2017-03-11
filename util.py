@@ -14,6 +14,8 @@ from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import jaccard_similarity_score
+from sklearn.decomposition import TruncatedSVD
+import tensorflow as tf
 
 # TODO(akshayka): Add a field for cosine similarity
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances", "sim_scores",
@@ -334,6 +336,27 @@ def similarity_metrics(headlines, bodies, similarity_metric_feature):
     return sim_scores
 
 
+def arora_embeddings_pc(vectorized_examples, embeddings):
+    unique_inputs = [list(i) for i in set(map(tuple, vectorized_examples))]
+    # very hacky code ...
+    emb = tf.constant(embeddings, dtype=tf.float32)
+    x = tf.nn.embedding_lookup(emb, unique_inputs)
+    used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
+    seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
+    seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
+    # weighted sentence embeddings (without removal of PC)
+    X = tf.divide(tf.reduce_sum(input_tensor=x, axis=1), seqlen_scale)
+    with tf.Session() as sess:
+        X = sess.run(X)
+        
+    # TODO(akshayka): should X be centered?
+    X = X.reshape(X.shape[0], X.shape[2])
+    svd = TruncatedSVD(n_components=1, n_iter=7, random_state=0)
+    svd.fit(X)
+    pc = svd.components_
+    return pc.T # shape (embedding dimension, 1)
+
+    
 # Taken from Arora's code: https://github.com/YingyuLiang/SIF/
 def get_word_weights(weightfile, a=1e-3):
     if a <=0: # when the parameter makes no sense, use unweighted
@@ -380,8 +403,8 @@ def vectorize(examples, word_indices, known_words, max_len):
     pad_idx = word_indices[PAD_TOKEN]
     examples = [[w for w in e if w in known_words] for e in examples]
     vectorized_examples = [(
-        [[word_indices[w]] for w in e] + \
-        [[pad_idx]] * max(max_len - len(e), 0))[:max_len] for e in examples]
+        [(word_indices[w],) for w in e] + \
+        [(pad_idx,)] * max(max_len - len(e), 0))[:max_len] for e in examples]
     return vectorized_examples
 
 
@@ -391,6 +414,7 @@ def load_embeddings(word_indices, dimension=300,
     glove_words = set([])
     weights = None if not weight_embeddings else \
         get_word_weights("aux_data/enwiki_vocab_min200.txt")
+    words_without_weights = 0
     with open(embedding_path, 'rb') as fstream:
         for line in fstream:
             line = line.strip()
@@ -405,7 +429,7 @@ def load_embeddings(word_indices, dimension=300,
                 if word in weights:
                     data = weights[word] * data
                 else:
-                    logging.warning("No weight entry for word %s", word)
+                    words_without_weights += 1
             if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
@@ -419,6 +443,8 @@ def load_embeddings(word_indices, dimension=300,
     if len(unk) > 0:
         logging.warning("%d unknown words out of %d total", len(unk),
             len(word_indices))
+    if words_without_weights > 0:
+        logging.warning("%d words do not have weights", words_without_weights)
     known_words = our_words.intersection(glove_words)
     return embeddings, known_words
         

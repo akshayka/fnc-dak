@@ -77,7 +77,8 @@ class FNCModel(Model):
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
     """
-    SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words"])
+    SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words,"
+        "arora"])
     SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
 
     def add_placeholders(self):
@@ -237,7 +238,7 @@ class FNCModel(Model):
             # if each cell is an LSTM cell, then h is a tuple of the form
             # (state, hidden_state)
             h = h[1] if self.config.method == "lstm" else h
-        elif self.config.method == "bag_of_words":
+        elif self.config.method == "bag_of_words" or "arora":
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
             # Transformation layers
@@ -258,6 +259,13 @@ class FNCModel(Model):
             seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
             h = tf.divide(tf.reduce_sum(input_tensor=inputs, axis=1),
                 seqlen_scale)
+            # TODO(akshayka): It would be much more efficient to precompute
+            # these sentence embeddings in util. This would require a lot of
+            # refactoring, however.
+            if self.config.method == "arora":
+                pc = self.headlines_pc if input_type == "headlines" \
+                    else self.bodies_pc
+                h -= tf.multiply(tf.matmul(h, pc), tf.transpose(pc))
             # Average layer
             if self.config.transform_mean:
                 with tf.variable_scope(scope + "/transform_mean"):
@@ -391,13 +399,17 @@ class FNCModel(Model):
 
 
     def __init__(self, config, max_headline_len, max_body_len,
-        pretrained_embeddings, verbose):
+        pretrained_embeddings, headlines_pc=None, bodies_pc=None,
+        verbose=False):
         super(FNCModel, self).__init__(config=config, verbose=verbose)
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
         self.max_headline_len = max_headline_len
         self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
+        if self.config.method == "arora":
+            self.headlines_pc = tf.constant(headlines_pc, dtype=tf.float32)
+            self.bodies_pc = tf.constant(bodies_pc, dtype=tf.float32)
 
         # Defining placeholders.
         self.headlines_placeholder = None
@@ -442,6 +454,15 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_headline_len)
     body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
         known_words, max_body_len)
+    headlines_pc = bodies_pc = None
+    if config.method == "arora":
+        headlines_pc = util.arora_embeddings_pc(headline_vectors,
+            embeddings)
+        bodies_pc = util.arora_embeddings_pc(body_vectors,
+            embeddings)
+    else:
+        headlines_pc = None
+        bodies_pc = None
     training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
@@ -456,7 +477,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         logger.info("Building model...",)
         start = time.time()
         model = FNCModel(config, max_headline_len, max_body_len, embeddings,
-            verbose)
+            headlines_pc=headlines_pc, bodies_pc=bodies_pc, verbose=verbose)
         logger.info("took %.2f seconds", time.time() - start)
 
         init = tf.global_variables_initializer()
@@ -531,7 +552,7 @@ if __name__ == "__main__":
         help="Dropout probability")
     command_parser.add_argument("-r", "--regularizer", type=str, default=None,
         help="Regularizer to apply; one of l1 or l2")
-    command_parser.add_argument("-p", "--penalty", type=float, default=0.05,
+    command_parser.add_argument("-p", "--penalty", type=float, default=1e-6,
         help="Regularization; ignored if regularizer is None")
     command_parser.add_argument("-ne", "--n_epochs", type=int, default=10,
         help="Number of training epochs.")
@@ -554,6 +575,8 @@ if __name__ == "__main__":
     ARGS = parser.parse_args()
     layers = len(ARGS.hidden_sizes)
     embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
+    if ARGS.method == "arora":
+        ARGS.weight_embeddings = True
 
     if ARGS.func is None:
         parser.print_help()

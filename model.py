@@ -1,7 +1,9 @@
 import logging
 
-import tensorflow as tf
 from util import ConfusionMatrix, Progbar, minibatches, LBLS, RELATED, UNRELATED
+
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
 logger = logging.getLogger("baseline")
 logger.setLevel(logging.DEBUG)
@@ -212,30 +214,44 @@ class Model(object):
             prog.update(i + 1, [("train loss", loss)])
         print("")
 
+        train_fnc_score = None
         if self.verbose:
             logger.info("Evaluating on training data")
-            eval_helper(sess, train_examples)
+            train_fnc_score = eval_helper(sess, train_examples)
 
         logger.info("Evaluating on development data")
         fnc_score = eval_helper(sess, dev_examples)
-        return fnc_score
+        return train_fnc_score, fnc_score
         
 
 
     def fit(self, sess, saver, train_examples, dev_examples):
         best_score = 0.
 
-        for epoch in range(1, self.config.n_epochs + 1):
+        tr_scores = []
+        dev_scores = []
+        epochs = range(1, self.config.n_epochs + 1)
+        for epoch in epochs:
             self.epoch = epoch
             logger.info("Epoch %d out of %d", self.epoch, self.config.n_epochs)
-            score = self.run_epoch(sess, train_examples, dev_examples)
-            if score > best_score:
-                best_score = score
+            tr_score, dev_score = self.run_epoch(sess, train_examples,
+                dev_examples)
+            tr_scores.append(tr_score)
+            dev_scores.append(dev_score)
+            if dev_score > best_score:
+                best_score = dev_score
                 if saver:
                     logger.info("New best score! Saving model in %s",
                         self.config.model_output)
                     saver.save(sess, self.config.model_output)
             print("")
+        plt.figure()
+        plt.plot(epochs, tr_scores, "ro", label="training scores")
+        plt.plot(epochs, dev_scores, "bo", label="dev scores")
+        plt.title("FNC Scores across Epochs")
+        plt.legend()
+        plt.xticks(epochs + [self.config.n_epochs + 1])
+        plt.savefig(self.config.output_path + "fnc_scores.png")
         return best_score
     
 
