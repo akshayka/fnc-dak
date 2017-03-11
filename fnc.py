@@ -79,6 +79,7 @@ class FNCModel(Model):
     """
     SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words,"
         "arora"])
+    SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
 
     def add_placeholders(self):
         """Generates placeholder variables to represent the input tensors
@@ -421,12 +422,13 @@ class FNCModel(Model):
         self.build()
 
 
-def do_train(train_bodies, train_stances, dimension, embedding_path, config,
+def do_train(train_bodies, train_stances, dimension, embedding_path, config, 
     max_headline_len=None, max_body_len=None, verbose=False, 
-    include_stopwords=True, weight_embeddings=False):
+    include_stopwords=True, similarity_metric_feature=None, 
+    weight_embeddings=False):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
-        train_bodies, train_stances, include_stopwords)
+        train_bodies, train_stances, similarity_metric_feature, include_stopwords)
     logging.info("%d training examples", len(fnc_data_train.headlines))
     logging.info("%d dev examples", len(fnc_data_dev.headlines))
     if max_headline_len is None:
@@ -526,6 +528,9 @@ if __name__ == "__main__":
         help="Whether to weight word embeddings as per Arora's paper.")
     command_parser.add_argument("-sw", "--include_stopwords", action="store_true",
         default=False, help="Include stopwords in data")
+    command_parser.add_argument("-smf", "--similarity_metric_feature", type=str,
+        default=None, help="Type of similarity metric features to add; one of %s" %
+        pprint.pformat(FNCModel.SUPPORTED_SIMILARITY_METRIC_FEATS))
     # ------------------------ NN Architecture ------------------------
     command_parser.add_argument("-mhl", "--max_headline_len", type=int,
         default=None, help="maximum number of words per headline; if None, "
@@ -604,4 +609,5 @@ if __name__ == "__main__":
             max_body_len=ARGS.max_body_len,
             verbose=ARGS.verbose, 
             include_stopwords=ARGS.include_stopwords,
+            similarity_metric_feature=ARGS.similarity_metric_feature,
             weight_embeddings=ARGS.weight_embeddings)
