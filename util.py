@@ -10,6 +10,8 @@ import sys
 
 import numpy as np
 from nltk.corpus import stopwords
+from sklearn.decomposition import TruncatedSVD
+import tensorflow as tf
 
 # TODO(akshayka): Add a field for cosine similarity
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
@@ -300,6 +302,27 @@ PAD_TOKEN = "___PPPADDD___"
     
 
 
+def arora_embeddings_pc(vectorized_examples, embeddings):
+    unique_inputs = [list(i) for i in set(map(tuple, vectorized_examples))]
+    # very hacky code ...
+    emb = tf.constant(embeddings, dtype=tf.float32)
+    x = tf.nn.embedding_lookup(emb, unique_inputs)
+    used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
+    seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
+    seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
+    # weighted sentence embeddings (without removal of PC)
+    X = tf.divide(tf.reduce_sum(input_tensor=x, axis=1), seqlen_scale)
+    with tf.Session() as sess:
+        X = sess.run(X)
+        
+    # TODO(akshayka): should X be centered?
+    X = X.reshape(X.shape[0], X.shape[2])
+    svd = TruncatedSVD(n_components=1, n_iter=7, random_state=0)
+    svd.fit(X)
+    pc = svd.components_
+    return pc.T # shape (embedding dimension, 1)
+
+    
 # Taken from Arora's code: https://github.com/YingyuLiang/SIF/
 def get_word_weights(weightfile, a=1e-3):
     if a <=0: # when the parameter makes no sense, use unweighted
@@ -346,8 +369,8 @@ def vectorize(examples, word_indices, known_words, max_len):
     pad_idx = word_indices[PAD_TOKEN]
     examples = [[w for w in e if w in known_words] for e in examples]
     vectorized_examples = [(
-        [[word_indices[w]] for w in e] + \
-        [[pad_idx]] * max(max_len - len(e), 0))[:max_len] for e in examples]
+        [(word_indices[w],) for w in e] + \
+        [(pad_idx,)] * max(max_len - len(e), 0))[:max_len] for e in examples]
     return vectorized_examples
 
 
