@@ -14,7 +14,8 @@ from nltk.corpus import stopwords
 # TODO(akshayka): Add a field for cosine similarity
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances",
     "max_headline_len", "max_body_len"])
-TOKEN_RE = r"\w+[']?[\w+]?"
+# TODO(akshayka): What about special punctuation like "@" or "#"?
+TOKEN_RE = r"[a-zA-Z]+[']?[a-zA-Z+]?"
 
 LBLS = ["unrelated", "discuss", "disagree", "agree"]
 
@@ -366,7 +367,10 @@ def load_embeddings(word_indices, dimension=300,
                 continue
             data = np.asarray([float(x) for x in row[1:]])
             if weight_embeddings:
-                data = weights[word] * data
+                if word in weights:
+                    data = weights[word] * data
+                else:
+                    logging.warning("No weight entry for word %s", word)
             if len(data) != dimension:
                 raise RuntimeError("wrong number of dimensions; "
                     "expected %d, saw %d" % (dimension, len(data)))
