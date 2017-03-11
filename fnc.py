@@ -334,9 +334,10 @@ class FNCModel(Model):
             loss: A 0-d tensor (scalar)
         """
 
-        labels = tf.cast(self.labels_placeholder, tf.float32)
+        labels = self.labels_placeholder
+        float_labels = tf.cast(labels, tf.float32)
         if self.config.similarity_metric:
-            loss = tf.abs(labels - preds)
+            loss = tf.abs(float_labels - preds)
         else:
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
                     logits=preds,
@@ -345,7 +346,7 @@ class FNCModel(Model):
         weights_per_label = 1.0
         if not self.config.unweighted_loss:
             # related_mask[i] == 1 if labels[i] > 0, 0 otherwise
-            related_mask = tf.sign(labels)
+            related_mask = tf.sign(float_labels)
             # unrelated_mask[i] == 1 if labels[i] == 0, 0 otherwise
             unrelated_mask = tf.abs(related_mask - 1)
             # weights_per_label[i] == 0.25 if labels[i] == 0, 1 otherwise
