@@ -458,6 +458,9 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
             embeddings)
         bodies_pc = util.arora_embeddings_pc(body_vectors,
             embeddings)
+    else:
+        headlines_pc = None
+        bodies_pc = None
     training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
