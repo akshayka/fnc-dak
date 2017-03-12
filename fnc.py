@@ -104,10 +104,16 @@ class FNCModel(Model):
             self.inputs_placeholder
             self.labels_placeholder
         """
+        headlines_shape = (None, self.config.embed_size) if \
+            self.method == "vanilla_bag_of_words" else \
+            (None, self.max_headline_len, self.config.n_features)
+        bodies_shape = (None, self.config.embed_size) if \
+            self.method == "vanilla_bag_of_words" else \
+            (None, self.max_body_len, self.config.n_features)
+
         self.headlines_placeholder = tf.placeholder(tf.int32,
-            shape=(None, self.max_headline_len, self.config.n_features))
-        self.bodies_placeholder = tf.placeholder(tf.int32,
-            shape=(None, self.max_body_len, self.config.n_features))
+            shape=headlines_shape)
+        self.bodies_placeholder = tf.placeholder(tf.int32, shape=bodies_shape)
         self.epoch_placeholder = tf.placeholder(tf.int32)
         self.dropout_placeholder = tf.placeholder(tf.float32)
         self.labels_placeholder = tf.placeholder(tf.int32,
@@ -174,6 +180,16 @@ class FNCModel(Model):
                     initializer=tf.constant_initializer(
                         self.pretrained_embeddings),
                     dtype=tf.float32)
+
+        # TODO(akshakya): ugly code ...
+        if self.config.method == "vanilla_bag_of_words":
+            if input_type == "headlines":
+                return self.headlines_placeholder
+            elif input_type == "bodies":
+                return self.bodies_placeholder
+        else:
+            raise ValueError("Invalid input_type %s" % input_type) 
+
         embeddings = tf.cond(tf.less(self.epoch_placeholder,
             self.config.train_embeddings_epoch),
             lambda: constant_embeddings(), lambda: variable_embeddings(scope))
@@ -189,8 +205,10 @@ class FNCModel(Model):
         else:
             raise ValueError("Invalid input_type %s" % input_type) 
 
-        embeddings = tf.reshape(input_embeddings, [-1, max_len,
-            self.config.n_features * self.config.embed_size])
+        embeddings_shape = (-1, self.config.embed_size) if \
+            self.config.method == "vanilla_bag_of_words" else \
+            (-1, max_len, self.config.n_features * self.config.embed_size)
+        embeddings = tf.reshape(input_embeddings, embeddings_shape)
         return embeddings
 
 
@@ -281,6 +299,19 @@ class FNCModel(Model):
                         keep_prob=(1-self.dropout_placeholder))
                     # TODO(akshayka): Experiment with other nonlinearities
                     h = tf.nn.relu(relu_input)
+        elif self.config.method == "vanilla_bag_of_words":
+            # TODO(akshayka): sorry for this code duplication ...!
+            h = x
+            if self.config.transform_mean:
+                with tf.variable_scope(scope + "/transform_mean"):
+                    U = tf.get_variable("U", shape=(h.get_shape.as_list[-1],
+                        self.config.hidden_sizes[-1]), initializer=xav)
+                    relu_input = tf.matmul(h, U)
+                    relu_input = tf.nn.dropout(relu_input,
+                        keep_prob=(1-self.dropout_placeholder))
+                    # TODO(akshayka): Experiment with other nonlinearities
+                    h = tf.nn.relu(relu_input)
+            
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
 
@@ -487,7 +518,13 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     else:
         headlines_pc = None
         bodies_pc = None
-    training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
+    if self.config.method == "vanilla_bag_of_words":
+        headlines_emb = util.sentence_embeddings(headline_vectors, embeddings)
+        bodies_emb = util.sentence_embeddings(body_vectors, embeddings)
+        training_data = zip(headlines_emb, bodies_emb, fnc_data_train.stances)
+    else:
+        training_data = zip(headline_vectors, body_vectors,
+            fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
@@ -495,7 +532,16 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_headline_len)
     dev_body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
         known_words, max_body_len)
-    dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
+
+    if self.config.method == "vanilla_bag_of_words":
+        dev_headlines_emb = util.sentence_embeddings(dev_headline_vectors,
+            embeddings)
+        dev_bodies_emb = util.sentence_embeddings(dev_body_vectors,
+            embeddings)
+        dev_data = zip(dev_headlines_emb, dev_bodies_emb,
+            fnc_data_dev.stances)
+    else:
+        dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
 
     with tf.Graph().as_default():
         logger.info("Building model...",)
