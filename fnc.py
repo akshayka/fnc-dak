@@ -82,7 +82,7 @@ class FNCModel(Model):
     single hidden layer.
     """
     SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words,"
-        "arora"])
+        "vanilla_bag_of_words", "arora"])
     SUPPORTED_SCORING_METRICS = frozenset(["manhattan", "cosine"])
     SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
 
@@ -427,6 +427,7 @@ class FNCModel(Model):
         super(FNCModel, self).__init__(config=config, verbose=verbose)
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
+        assert self.config.method in FNCModel.SUPPORTED_METHODS
         self.max_headline_len = max_headline_len
         self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
