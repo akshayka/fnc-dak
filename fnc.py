@@ -110,10 +110,14 @@ class FNCModel(Model):
         bodies_shape = (None, self.config.embed_size) if \
             self.config.method == "vanilla_bag_of_words" else \
             (None, self.max_body_len, self.config.n_features)
+        input_dtype = tf.float32 if \
+            self.config.method == "vanilla_bag_of_words" else \
+            tf.int32
 
-        self.headlines_placeholder = tf.placeholder(tf.int32,
+        self.headlines_placeholder = tf.placeholder(input_dtype,
             shape=headlines_shape)
-        self.bodies_placeholder = tf.placeholder(tf.int32, shape=bodies_shape)
+        self.bodies_placeholder = tf.placeholder(input_dtype,
+            shape=bodies_shape)
         self.epoch_placeholder = tf.placeholder(tf.int32)
         self.dropout_placeholder = tf.placeholder(tf.float32)
         self.labels_placeholder = tf.placeholder(tf.int32,
@@ -306,7 +310,7 @@ class FNCModel(Model):
             h = x
             if self.config.transform_mean:
                 with tf.variable_scope(scope + "/transform_mean"):
-                    U = tf.get_variable("U", shape=(h.get_shape.as_list[-1],
+                    U = tf.get_variable("U", shape=(h.get_shape().as_list()[-1],
                         self.config.hidden_sizes[-1]), initializer=xav)
                     relu_input = tf.matmul(h, U)
                     relu_input = tf.nn.dropout(relu_input,
@@ -510,6 +514,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_headline_len)
     body_vectors = util.vectorize(fnc_data_train.bodies, word_indices,
         known_words, max_body_len)
+
     headlines_pc = bodies_pc = None
     if config.method == "arora":
         headlines_pc = util.arora_embeddings_pc(headline_vectors,
@@ -519,6 +524,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     else:
         headlines_pc = None
         bodies_pc = None
+
     if config.method == "vanilla_bag_of_words":
         headlines_emb = util.sentence_embeddings(headline_vectors, dimension,
             max_headline_len, embeddings)
@@ -544,7 +550,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         dev_data = zip(dev_headlines_emb, dev_bodies_emb,
             fnc_data_dev.stances)
     else:
-        dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
+        dev_data = zip(dev_headline_vectors, dev_body_vectors,
+            fnc_data_dev.stances)
 
     with tf.Graph().as_default():
         logger.info("Building model...",)
