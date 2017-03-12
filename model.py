@@ -257,7 +257,7 @@ class Model(object):
     def build(self):
         self.add_placeholders()
         self.pred = self.add_prediction_op()
-        if self.config.similarity_metric:
+        if self.config.scoring_metrics is not None:
             # TODO(akshayka): Should sim preds be integers?
             self.final_pred = tf.round(self.pred)
             self.final_pred = tf.maximum(tf.minimum(self.final_pred, 3), 0)

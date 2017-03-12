@@ -302,17 +302,17 @@ class FNCModel(Model):
         """
         def regression_op(scores, degree, scope):
             preds = 0
-            for d in degree:
+            for d in range(1, degree+1):
                 with tf.variable_scope(scope + "/deg_%d" % d):
                     m = tf.get_variable("m", shape=[],
                         initializer=tf.constant_initializer(4.0),
                         dtype=tf.float32)
-                    b = tf.get_variable("b", shape=[],
-                        initializer=tf.constant_initializer(0.0),
-                        dtype=tf.float32)
-                    # TODO(akshayka): Polynomial regression
-
-                    preds += tf.multiply(m, tf.pow(scores, d)) + b
+                    preds += tf.multiply(m, tf.pow(scores, d))
+            with tf.variable_scope(scope + "/deg_%d" % 0):
+                b = tf.get_variable("b", shape=[],
+                    initializer=tf.constant_initializer(0.0),
+                    dtype=tf.float32)
+                preds += b
             return preds
 
         headline_hidden = self.add_hidden_op(input_type='headlines',
@@ -329,14 +329,14 @@ class FNCModel(Model):
                     axis=1)
                 # shape (batch_size, 1)
                 scores = tf.exp(-1 * distance)
-                preds += regression_op(scores, self.degree,
+                preds += regression_op(scores, self.config.degree,
                     "prediction_op/manhattan")
             if "cosine" in self.config.scoring_metrics:
                 headline_norm = tf.l2_normalize(headline_hidden, axis=1)
                 body_norm = tf.l2_normalize(body_hidden, axis=1)
                 dot = tf.reduce_sum(tf.multipy(headline_norm, body_norm),
                     axis=1)
-                preds += regression_op(scores, self.degree,
+                preds += regression_op(scores, self.config.degree,
                     "prediction_op/cosine")
             # shape (batch_size, 1)
             return preds
@@ -588,11 +588,11 @@ if __name__ == "__main__":
         action="store_true", default=False,
         help="Include to use unweighted loss")
     command_parser.add_argument("-sm", "--scoring_metrics", type=str, nargs="+",
-        default=None, default=False, help="Train by regressing a similarity "
+        default=None, help="Train by regressing a similarity "
         "score against the labels; the leading arguments must be a subset of "
         "%s, while the last argument must be a positive number specifying the "
         "the (polynomial) degree of the regression. "% pprint.pformat(
-        SUPPORTED_SCORING_METRICS))
+        FNCModel.SUPPORTED_SCORING_METRICS))
     # ------------------------ Output Settings ------------------------
     command_parser.add_argument("-v", "--verbose", action="store_true",
         default=False)
