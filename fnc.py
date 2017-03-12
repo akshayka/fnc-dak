@@ -43,7 +43,6 @@ class Config:
         self.n_features = n_features
         self.n_classes = n_classes
         self.method = method
-        self.train_embeddings_epoch = train_embeddings_epoch
         self.embed_size = embed_size
         self.hidden_sizes = hidden_sizes
         self.dropout = dropout
@@ -54,6 +53,8 @@ class Config:
         self.regularizer=regularizer
         self.penalty=penalty
         self.n_epochs = n_epochs
+        self.train_embeddings_epoch = train_embeddings_epoch if \
+            train_embeddings_epoch is not None else 1 + n_epochs
         self.lr = lr
 
         self.layers = len(self.hidden_sizes)
@@ -63,9 +64,8 @@ class Config:
             self.output_path = output_path
         else:
             self.output_path = \
-                "results/{:%Y%m%d_%H%M%S}_{:}d_{:}d_{:}_te_{:}/".format(
-                datetime.now(), self.embed_size, self.layers, self.method,
-                train_embeddings_epoch)
+                "results/{:%Y%m%d_%H%M%S}_{:}d_{:}L_{:}/".format(
+                datetime.now(), self.embed_size, self.layers, self.method)
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
@@ -557,8 +557,8 @@ if __name__ == "__main__":
     command_parser.add_argument("-ne", "--n_epochs", type=int, default=10,
         help="Number of training epochs.")
     command_parser.add_argument("-te", "--train_embeddings_epoch", type=int,
-        default=11, help="Start training embeddings from this epoch onwards; "
-        "embeddings are not trained if this argument is > n_epochs")
+        default=None, help="Start training embeddings from this epoch onwards; "
+        "embeddings are not trained if this argument is None or > n_epochs")
     command_parser.add_argument("-b", "--batch_size", type=int,
         default=52, help="The batch size")
     command_parser.add_argument("-ul", "--unweighted_loss",

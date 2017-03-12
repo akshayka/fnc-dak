@@ -510,7 +510,8 @@ def read_bodies(fstream, include_stopwords):
 
 
 def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream, 
-    include_stopwords, similarity_metric_feature, train_test_split=0.8):
+    include_stopwords=False, similarity_metric_feature=None,
+    train_test_split=0.8):
     stances = read_stances(train_stances_fstream, include_stopwords)
     body_ids = stances[1]
     unique_body_ids = list(set(body_ids))
