@@ -198,8 +198,8 @@ class FNCModel(Model):
                 return self.headlines_placeholder
             elif input_type == "bodies":
                 return self.bodies_placeholder
-        else:
-            raise ValueError("Invalid input_type %s" % input_type) 
+            else:
+                raise ValueError("Invalid input_type %s" % input_type) 
 
         embeddings = tf.cond(tf.less(self.epoch_placeholder,
             self.config.train_embeddings_epoch),
@@ -376,9 +376,9 @@ class FNCModel(Model):
                 preds += regression_op(scores, self.config.degree,
                     "prediction_op/manhattan")
             if "cosine" in self.config.scoring_metrics:
-                headline_norm = tf.nn.l2_normalize(headline_hidden, axis=1)
-                body_norm = tf.nn.l2_normalize(body_hidden, axis=1)
-                dot = tf.reduce_sum(tf.multipy(headline_norm, body_norm),
+                headline_norm = tf.nn.l2_normalize(headline_hidden, dim=1)
+                body_norm = tf.nn.l2_normalize(body_hidden, dim=1)
+                scores = tf.reduce_sum(tf.multiply(headline_norm, body_norm),
                     axis=1)
                 preds += regression_op(scores, self.config.degree,
                     "prediction_op/cosine")
