@@ -37,7 +37,7 @@ class Config:
     # TODO(akshayka): Add dropout or regularization
     def __init__(self, n_features=1, n_classes=4, method="rnn",
         embed_size=50, hidden_sizes=[50], dropout=0.0, transform_mean=False,
-        batch_size=52, unweighted_loss=False, similarity_metric=False,
+        batch_size=52, unweighted_loss=False, scoring_metrics=None,
         regularizer=None, penalty=0.05, n_epochs=10,
         train_embeddings_epoch=10, lr=0.001, output_path=None):
         self.n_features = n_features
@@ -49,7 +49,7 @@ class Config:
         self.transform_mean = transform_mean
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
-        self.similarity_metric = similarity_metric
+        self.scoring_metrics = scoring_metrics[:-1]
         self.regularizer=regularizer
         self.penalty=penalty
         self.n_epochs = n_epochs
@@ -58,6 +58,10 @@ class Config:
         self.lr = lr
 
         self.layers = len(self.hidden_sizes)
+        try:
+           self.degree = int(scoring_metrics[-1])
+        except ValueError:
+            raise ValueError, "The last argument of -sm must be an integer."
 
         if output_path:
             # Where to save things.
@@ -79,6 +83,7 @@ class FNCModel(Model):
     """
     SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words,"
         "arora"])
+    SUPPORTED_SCORING_METRICS = frozenset(["manhattan", "cosine"])
     SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
 
     def add_placeholders(self):
@@ -274,6 +279,7 @@ class FNCModel(Model):
                     relu_input = tf.matmul(h, U)
                     relu_input = tf.nn.dropout(relu_input,
                         keep_prob=(1-self.dropout_placeholder))
+                    # TODO(akshayka): Experiment with other nonlinearities
                     h = tf.nn.relu(relu_input)
         else:
             raise ValueError("Unsuppported method: " + self.config.method)
@@ -294,6 +300,21 @@ class FNCModel(Model):
             preds : tensor of shape
                 (self.config.batch_size, self.config.n_classes)
         """
+        def regression_op(scores, degree, scope):
+            preds = 0
+            for d in degree:
+                with tf.variable_scope(scope + "/deg_%d" % d):
+                    m = tf.get_variable("m", shape=[],
+                        initializer=tf.constant_initializer(4.0),
+                        dtype=tf.float32)
+                    b = tf.get_variable("b", shape=[],
+                        initializer=tf.constant_initializer(0.0),
+                        dtype=tf.float32)
+                    # TODO(akshayka): Polynomial regression
+
+                    preds += tf.multiply(m, tf.pow(scores, d)) + b
+            return preds
+
         headline_hidden = self.add_hidden_op(input_type='headlines',
             scope=self.headline_scope)
         body_hidden = self.add_hidden_op(input_type='bodies',
@@ -301,21 +322,23 @@ class FNCModel(Model):
 
         # TODO(akshayka): Experiment with using the cosine similarity
         # as the similarity metric, instead of the l1 norm?
-        if self.config.similarity_metric:
-            # TODO(akshayka): reduce_mean vs reduce_sum?
-            distance = tf.reduce_mean(tf.abs(headline_hidden - body_hidden),
-                axis=1)
+        if self.config.scoring_metrics is not None:
+            preds = 0
+            if "manhattan" in self.config.scoring_metrics:
+                distance = tf.reduce_mean(tf.abs(headline_hidden - body_hidden),
+                    axis=1)
+                # shape (batch_size, 1)
+                scores = tf.exp(-1 * distance)
+                preds += regression_op(scores, self.degree,
+                    "prediction_op/manhattan")
+            if "cosine" in self.config.scoring_metrics:
+                headline_norm = tf.l2_normalize(headline_hidden, axis=1)
+                body_norm = tf.l2_normalize(body_hidden, axis=1)
+                dot = tf.reduce_sum(tf.multipy(headline_norm, body_norm),
+                    axis=1)
+                preds += regression_op(scores, self.degree,
+                    "prediction_op/cosine")
             # shape (batch_size, 1)
-            scores = tf.exp(-1 * distance)
-            with tf.variable_scope("prediction_op"):
-                m = tf.get_variable("m", shape=[], 
-                    initializer=tf.constant_initializer(4.0),
-                    dtype=tf.float32)
-                b = tf.get_variable("b", shape=[],
-                    initializer=tf.constant_initializer(0.0), dtype=tf.float32)
-                preds = tf.multiply(m, scores) + b
-            # shape (batch_size, 1)
-            # TODO(akshayka): Should these be rounded to the true prediction or not?
             return preds
         else:
             # TODO(akshayka): append the cosine similarity to pred_input
@@ -345,7 +368,7 @@ class FNCModel(Model):
 
         labels = self.labels_placeholder
         float_labels = tf.cast(labels, tf.float32)
-        if self.config.similarity_metric:
+        if self.config.scoring_metrics is not None:
             loss = tf.abs(float_labels - preds)
         else:
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -564,15 +587,20 @@ if __name__ == "__main__":
     command_parser.add_argument("-ul", "--unweighted_loss",
         action="store_true", default=False,
         help="Include to use unweighted loss")
-    command_parser.add_argument("-sm", "--similarity_metric",
-        action="store_true", default=False,
-        help="Train against a similarity loss function.")
+    command_parser.add_argument("-sm", "--scoring_metrics", type=str, nargs="+",
+        default=None, default=False, help="Train by regressing a similarity "
+        "score against the labels; the leading arguments must be a subset of "
+        "%s, while the last argument must be a positive number specifying the "
+        "the (polynomial) degree of the regression. "% pprint.pformat(
+        SUPPORTED_SCORING_METRICS))
     # ------------------------ Output Settings ------------------------
     command_parser.add_argument("-v", "--verbose", action="store_true",
         default=False)
     command_parser.set_defaults(func=do_train)
 
     ARGS = parser.parse_args()
+
+    # Argument validation
     layers = len(ARGS.hidden_sizes)
     embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
     if ARGS.method == "arora":
@@ -588,7 +616,7 @@ if __name__ == "__main__":
             dropout=ARGS.dropout,
             transform_mean=ARGS.transform_mean,
             unweighted_loss=ARGS.unweighted_loss,
-            similarity_metric=ARGS.similarity_metric,
+            scoring_metrics=ARGS.scoring_metrics,
             regularizer=ARGS.regularizer,
             penalty=ARGS.penalty,
             batch_size=ARGS.batch_size,
