@@ -209,14 +209,14 @@ class Model(object):
 
 
     def run_epoch(self, sess, train_examples, dev_examples):
-        def eval_helper(sess, examples):
+        def eval_helper(sess, examples, msg_prefix):
             token_cm, entity_scores, ratios = self.evaluate(sess,
                 examples)
             logger.debug("Token-level confusion matrix:\n" +
                 token_cm.as_table())
             logger.debug("Token-level scores:\n" + token_cm.summary())
             logger.info("Entity level P/R/F1: %.2f/%.2f/%.2f", *entity_scores)
-            logger.info("FNC Score: %.2f", ratios[1])
+            logger.info("%s FNC Score: %.2f", msg_prefix, ratios[1])
             logger.info("Unrelated Score: %.2f", ratios[0])
             fnc_score = ratios[1]
             return fnc_score
@@ -236,10 +236,10 @@ class Model(object):
         train_fnc_score = None
         if self.verbose:
             logger.info("Evaluating on training data")
-            train_fnc_score = eval_helper(sess, train_examples)
+            train_fnc_score = eval_helper(sess, train_examples, "Train")
 
         logger.info("Evaluating on development data")
-        fnc_score = eval_helper(sess, dev_examples)
+        fnc_score = eval_helper(sess, dev_examples, "Dev")
         return train_fnc_score, fnc_score
         
 
@@ -269,7 +269,6 @@ class Model(object):
         plt.plot(epochs, dev_scores, "bo", label="dev scores")
         plt.title("FNC Scores across Epochs")
         plt.legend()
-        plt.xticks(epochs + [self.config.n_epochs + 1])
         plt.savefig(self.config.output_path + "fnc_scores.png")
         return best_score
     
