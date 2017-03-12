@@ -302,9 +302,11 @@ def minibatches(data, batch_size, shuffle=True):
 # ---------------- Utilities for data processing -------------
 PAD_TOKEN = "___PPPADDD___"
 
-def sentence_embeddings(examples, embeddings):
+def sentence_embeddings(examples, dimension, max_len, embeddings):
+    logging.info("sentence emb...")
     emb = tf.constant(embeddings, dtype=tf.float32)
     x = tf.nn.embedding_lookup(emb, examples)
+    x = tf.reshape(x, (-1, max_len, dimension))
     used = tf.sign(tf.reduce_max(tf.abs(x), axis=2))
     seqlen = tf.cast(tf.reduce_sum(used, axis=1), tf.int32)
     seqlen_scale = tf.cast(tf.expand_dims(seqlen, axis=1), tf.float32)
@@ -312,7 +314,6 @@ def sentence_embeddings(examples, embeddings):
     X = tf.divide(tf.reduce_sum(input_tensor=x, axis=1), seqlen_scale)
     with tf.Session() as sess:
         X = sess.run(X)
-    X = X.reshape(X.shape[0], X.shape[2])
     return X
 
 def countFeaturizer(data, binary_counts):

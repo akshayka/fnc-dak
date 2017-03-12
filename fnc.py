@@ -81,7 +81,7 @@ class FNCModel(Model):
     Implements a recursive neural network with an embedding layer and
     single hidden layer.
     """
-    SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words,"
+    SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words",
         "vanilla_bag_of_words", "arora"])
     SUPPORTED_SCORING_METRICS = frozenset(["manhattan", "cosine"])
     SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
@@ -105,10 +105,10 @@ class FNCModel(Model):
             self.labels_placeholder
         """
         headlines_shape = (None, self.config.embed_size) if \
-            self.method == "vanilla_bag_of_words" else \
+            self.config.method == "vanilla_bag_of_words" else \
             (None, self.max_headline_len, self.config.n_features)
         bodies_shape = (None, self.config.embed_size) if \
-            self.method == "vanilla_bag_of_words" else \
+            self.config.method == "vanilla_bag_of_words" else \
             (None, self.max_body_len, self.config.n_features)
 
         self.headlines_placeholder = tf.placeholder(tf.int32,
@@ -229,9 +229,10 @@ class FNCModel(Model):
             return seqlen
 
         x = self.add_embedding(input_type, scope)
-        seqlen = sequence_length(x)
         xav = tf.contrib.layers.xavier_initializer()
+
         if self.config.method in ["rnn", "gru", "lstm"]:
+            seqlen = sequence_length(x)
             cells = []
             inputs = x
             kwargs = {}
@@ -261,7 +262,8 @@ class FNCModel(Model):
             # if each cell is an LSTM cell, then h is a tuple of the form
             # (state, hidden_state)
             h = h[1] if self.config.method == "lstm" else h
-        elif self.config.method == "bag_of_words" or "arora":
+        elif self.config.method in ["bag_of_words", "arora"]:
+            seqlen = sequence_length(x)
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
             # Transformation layers
@@ -458,7 +460,6 @@ class FNCModel(Model):
         super(FNCModel, self).__init__(config=config, verbose=verbose)
         self.config = config
         logging.debug("Creating model with method %s", self.config.method)
-        assert self.config.method in FNCModel.SUPPORTED_METHODS
         self.max_headline_len = max_headline_len
         self.max_body_len = max_body_len
         self.pretrained_embeddings = pretrained_embeddings
@@ -518,9 +519,11 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     else:
         headlines_pc = None
         bodies_pc = None
-    if self.config.method == "vanilla_bag_of_words":
-        headlines_emb = util.sentence_embeddings(headline_vectors, embeddings)
-        bodies_emb = util.sentence_embeddings(body_vectors, embeddings)
+    if config.method == "vanilla_bag_of_words":
+        headlines_emb = util.sentence_embeddings(headline_vectors, dimension,
+            max_headline_len, embeddings)
+        bodies_emb = util.sentence_embeddings(body_vectors, dimension,
+            max_body_len, embeddings)
         training_data = zip(headlines_emb, bodies_emb, fnc_data_train.stances)
     else:
         training_data = zip(headline_vectors, body_vectors,
@@ -533,11 +536,11 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     dev_body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
         known_words, max_body_len)
 
-    if self.config.method == "vanilla_bag_of_words":
+    if config.method == "vanilla_bag_of_words":
         dev_headlines_emb = util.sentence_embeddings(dev_headline_vectors,
-            embeddings)
+            dimension, max_headline_len, embeddings)
         dev_bodies_emb = util.sentence_embeddings(dev_body_vectors,
-            embeddings)
+            dimension, max_body_len, embeddings)
         dev_data = zip(dev_headlines_emb, dev_bodies_emb,
             fnc_data_dev.stances)
     else:
@@ -650,6 +653,8 @@ if __name__ == "__main__":
     # Argument validation
     layers = len(ARGS.hidden_sizes)
     embedding_path = "glove/glove.6B.%dd.txt" % ARGS.dimension
+
+    assert ARGS.method in FNCModel.SUPPORTED_METHODS
     if ARGS.method == "arora":
         ARGS.weight_embeddings = True
 
