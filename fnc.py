@@ -253,7 +253,7 @@ class FNCModel(Model):
             # if each cell is an LSTM cell, then h is a tuple of the form
             # (state, hidden_state)
             h = h[1] if self.config.method == "lstm" else h
-        elif self.config.method == "bag_of_words" or "arora":
+        elif self.config.method in ["bag_of_words", "arora"]:
             inputs = x
             inputs_shape = inputs.get_shape().as_list()
             # Transformation layers
