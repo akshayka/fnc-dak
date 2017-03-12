@@ -125,8 +125,8 @@ class FNCModel(Model):
             shape=bodies_shape)
         self.epoch_placeholder = tf.placeholder(tf.int32)
         self.dropout_placeholder = tf.placeholder(tf.float32)
-        self.labels_placeholder = tf.placeholder(tf.int32,
-            shape=(None))
+        self.labels_placeholder = tf.placeholder(tf.int32, shape=(None))
+        self.sim_scores_placeholder = tf.placeholder(tf.float32, shape=(None))
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, epoch,
