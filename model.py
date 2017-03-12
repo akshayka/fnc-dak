@@ -85,7 +85,8 @@ class Model(object):
         raise NotImplementedError("Each Model must re-implement this method.")
 
 
-    def train_on_batch(self, sess, headlines_batch, bodies_batch, labels_batch):
+    def train_on_batch(self, sess, headlines_batch, bodies_batch, labels_batch, 
+        sim_scores_batch=None):
         """Perform one step of gradient descent on the provided batch of data.
 
         Args:
@@ -95,13 +96,19 @@ class Model(object):
         Returns:
             loss: loss over the batch (a scalar)
         """
-        feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch,
-            dropout=self.config.dropout, labels_batch=labels_batch)
+        if self.config.similarity_metric_feature:
+            feed = self.create_feed_dict(headlines_batch, bodies_batch, 
+                self.epoch, sim_scores_batch=sim_scores_batch, 
+                dropout=self.config.dropout, labels_batch=labels_batch)
+        else:
+            feed = self.create_feed_dict(headlines_batch, bodies_batch, self.epoch,
+                dropout=self.config.dropout, labels_batch=labels_batch)
         _, loss = sess.run([self.train_op, self.loss], feed_dict=feed)
         return loss
 
 
-    def predict_on_batch(self, sess, headlines_batch, bodies_batch):
+    def predict_on_batch(self, sess, headlines_batch, bodies_batch, 
+        sim_scores_batch=None):
         """Make predictions for the provided batch of data
 
         Args:
@@ -111,8 +118,12 @@ class Model(object):
             predictions: np.ndarray of shape (n_samples, n_classes)
         """
         # Do not apply dropout during evaluation!
-        feed = self.create_feed_dict(headlines_batch, bodies_batch,
-            self.epoch, dropout=0)
+        if self.config.similarity_metric_feature:
+            feed = self.create_feed_dict(headlines_batch, bodies_batch,
+                self.epoch, sim_scores_batch=sim_scores_batch, dropout=0)
+        else:
+            feed = self.create_feed_dict(headlines_batch, bodies_batch,
+                self.epoch, dropout=0)
         predictions = sess.run(self.final_pred, feed_dict=feed)
         return predictions
 
@@ -123,8 +134,12 @@ class Model(object):
         """
 
         preds = []
-        headlines, bodies, stances = zip(*inputs)
-        data = zip(headlines, bodies)
+        if self.config.similarity_metric_feature:
+            headlines, bodies, stances, sim_scores = zip(*inputs)
+            data = zip(headlines, bodies, sim_scores)
+        else:
+            headlines, bodies, stances = zip(*inputs)
+            data = zip(headlines, bodies)
         prog = Progbar(target=1 + int(len(stances) / self.config.batch_size))
         # TODO(akshayka): Verify that data is in the correct structure
         for i, batch in enumerate(minibatches(data, self.config.batch_size,
@@ -210,7 +225,11 @@ class Model(object):
             self.config.batch_size))
         for i, batch in enumerate(minibatches(train_examples,
             self.config.batch_size)):
-            loss = self.train_on_batch(sess, *batch)
+            if self.config.similarity_metric_feature:
+                loss = self.train_on_batch(sess, batch[0], batch[1], batch[2], 
+                    sim_scores_batch=batch[3])
+            else:
+                loss = self.train_on_batch(sess, *batch)
             prog.update(i + 1, [("train loss", loss)])
         print("")
 
