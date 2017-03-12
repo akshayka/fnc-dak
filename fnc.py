@@ -50,7 +50,8 @@ class Config:
         self.transform_mean = transform_mean
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
-        self.scoring_metrics = scoring_metrics[:-1]
+        self.scoring_metrics = scoring_metrics[:-1] \
+            if scoring_metrics is not None else None
         self.regularizer=regularizer
         self.penalty=penalty
         self.n_epochs = n_epochs
@@ -60,10 +61,12 @@ class Config:
         self.lr = lr
 
         self.layers = len(self.hidden_sizes)
-        try:
-           self.degree = int(scoring_metrics[-1])
-        except ValueError:
-            raise ValueError, "The last argument of -sm must be an integer."
+
+        if scoring_metrics is not None:
+            try:
+               self.degree = int(scoring_metrics[-1])
+            except ValueError:
+                raise ValueError, "The last argument of -sm must be an integer."
 
         if output_path:
             # Where to save things.
