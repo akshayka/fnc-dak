@@ -39,6 +39,7 @@ class Config:
         embed_size=50, hidden_sizes=[50], dropout=0.0, transform_mean=False,
         batch_size=52, unweighted_loss=False, similarity_metric=False,
         regularizer=None, penalty=0.05, n_epochs=10,
+        similarity_metric_feature=None,
         train_embeddings_epoch=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
@@ -54,6 +55,7 @@ class Config:
         self.regularizer=regularizer
         self.penalty=penalty
         self.n_epochs = n_epochs
+        self.similarity_metric_feature = similarity_metric_feature
         self.lr = lr
 
         self.layers = len(self.hidden_sizes)
@@ -103,6 +105,9 @@ class FNCModel(Model):
             shape=(None, self.max_headline_len, self.config.n_features))
         self.bodies_placeholder = tf.placeholder(tf.int32,
             shape=(None, self.max_body_len, self.config.n_features))
+        if self.config.similarity_metric_feature:
+            self.sim_scores_placeholder = tf.placeholder(tf.float32,
+                shape=(None))
         self.epoch_placeholder = tf.placeholder(tf.int32)
         self.dropout_placeholder = tf.placeholder(tf.float32)
         self.labels_placeholder = tf.placeholder(tf.int32,
@@ -110,7 +115,7 @@ class FNCModel(Model):
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, epoch,
-        dropout=0.0, labels_batch=None):
+        sim_scores_batch=None, dropout=0.0, labels_batch=None):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -135,6 +140,8 @@ class FNCModel(Model):
         feed_dict = {}
         feed_dict[self.headlines_placeholder] = headlines_batch
         feed_dict[self.bodies_placeholder] = bodies_batch
+        if self.config.similarity_metric_feature:
+            feed_dict[self.sim_scores_placeholder] = sim_scores_batch
         feed_dict[self.epoch_placeholder] = epoch
         feed_dict[self.dropout_placeholder] = dropout
         if labels_batch is not None:
@@ -322,12 +329,18 @@ class FNCModel(Model):
             # this will need to be a placeholder
             pred_input = tf.concat(axis=1,
                 values=[headline_hidden, body_hidden])
+            W_hidden_size = 2 * self.config.hidden_sizes[-1]
+            if self.config.similarity_metric_feature:
+                sim_scores = tf.expand_dims(self.sim_scores_placeholder, axis=1)
+                pred_input = tf.concat(axis=1,
+                    values=[pred_input, sim_scores])
+                W_hidden_size += 1
             with tf.variable_scope("prediction_op"):
-               W = tf.get_variable("W", (2 * self.config.hidden_sizes[-1],
-                   self.config.n_classes))
-               b = tf.get_variable("b", (self.config.n_classes),
-                   initializer=tf.constant_initializer(0.0), dtype=tf.float32)
-               preds = tf.matmul(pred_input, W) + b
+                W = tf.get_variable("W", (W_hidden_size,
+                    self.config.n_classes))
+                b = tf.get_variable("b", (self.config.n_classes),
+                    initializer=tf.constant_initializer(0.0), dtype=tf.float32)
+                preds = tf.matmul(pred_input, W) + b
             return preds
 
 
@@ -428,7 +441,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     weight_embeddings=False):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
-        train_bodies, train_stances, similarity_metric_feature, include_stopwords)
+        train_bodies, train_stances, include_stopwords, 
+        similarity_metric_feature)
     logging.info("%d training examples", len(fnc_data_train.headlines))
     logging.info("%d dev examples", len(fnc_data_dev.headlines))
     if max_headline_len is None:
@@ -463,7 +477,12 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     else:
         headlines_pc = None
         bodies_pc = None
-    training_data = zip(headline_vectors, body_vectors, fnc_data_train.stances)
+    if similarity_metric_feature:
+        training_data = zip(headline_vectors, body_vectors, 
+            fnc_data_train.stances, fnc_data_train.sim_scores)
+    else:
+        training_data = zip(headline_vectors, body_vectors, 
+            fnc_data_train.stances)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
@@ -471,7 +490,12 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_headline_len)
     dev_body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
         known_words, max_body_len)
-    dev_data = zip(dev_headline_vectors, dev_body_vectors, fnc_data_dev.stances)
+    if similarity_metric_feature:
+        dev_data = zip(dev_headline_vectors, dev_body_vectors, 
+            fnc_data_dev.stances, fnc_data_dev.sim_scores)
+    else:
+        dev_data = zip(dev_headline_vectors, dev_body_vectors, 
+            fnc_data_dev.stances)
 
     with tf.Graph().as_default():
         logger.info("Building model...",)
@@ -593,6 +617,7 @@ if __name__ == "__main__":
             penalty=ARGS.penalty,
             batch_size=ARGS.batch_size,
             n_epochs=ARGS.n_epochs,
+            similarity_metric_feature=ARGS.similarity_metric_feature,
             train_embeddings_epoch=ARGS.train_embeddings_epoch)
 
         handler = logging.FileHandler(config.log_output)
