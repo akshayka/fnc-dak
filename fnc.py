@@ -376,8 +376,8 @@ class FNCModel(Model):
                 preds += regression_op(scores, self.config.degree,
                     "prediction_op/manhattan")
             if "cosine" in self.config.scoring_metrics:
-                headline_norm = tf.l2_normalize(headline_hidden, axis=1)
-                body_norm = tf.l2_normalize(body_hidden, axis=1)
+                headline_norm = tf.nn.l2_normalize(headline_hidden, axis=1)
+                body_norm = tf.nn.l2_normalize(body_hidden, axis=1)
                 dot = tf.reduce_sum(tf.multipy(headline_norm, body_norm),
                     axis=1)
                 preds += regression_op(scores, self.config.degree,
