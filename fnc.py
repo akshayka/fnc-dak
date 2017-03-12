@@ -39,6 +39,7 @@ class Config:
         embed_size=50, hidden_sizes=[50], dropout=0.0, transform_mean=False,
         batch_size=52, unweighted_loss=False, scoring_metrics=None,
         regularizer=None, penalty=0.05, n_epochs=10,
+        similarity_metric_feature=None,
         train_embeddings_epoch=10, lr=0.001, output_path=None):
         self.n_features = n_features
         self.n_classes = n_classes
@@ -49,19 +50,23 @@ class Config:
         self.transform_mean = transform_mean
         self.batch_size = batch_size
         self.unweighted_loss = unweighted_loss
-        self.scoring_metrics = scoring_metrics[:-1]
+        self.scoring_metrics = scoring_metrics[:-1] \
+            if scoring_metrics is not None else None
         self.regularizer=regularizer
         self.penalty=penalty
         self.n_epochs = n_epochs
+        self.similarity_metric_feature = similarity_metric_feature
         self.train_embeddings_epoch = train_embeddings_epoch if \
             train_embeddings_epoch is not None else 1 + n_epochs
         self.lr = lr
 
         self.layers = len(self.hidden_sizes)
-        try:
-           self.degree = int(scoring_metrics[-1])
-        except ValueError:
-            raise ValueError, "The last argument of -sm must be an integer."
+
+        if scoring_metrics is not None:
+            try:
+               self.degree = int(scoring_metrics[-1])
+            except ValueError:
+                raise ValueError, "The last argument of -sm must be an integer."
 
         if output_path:
             # Where to save things.
@@ -125,7 +130,7 @@ class FNCModel(Model):
 
 
     def create_feed_dict(self, headlines_batch, bodies_batch, epoch,
-        dropout=0.0, labels_batch=None):
+        sim_scores_batch=None, dropout=0.0, labels_batch=None):
         """Creates the feed_dict for the dependency parser.
 
         A feed_dict takes the form of:
@@ -150,6 +155,8 @@ class FNCModel(Model):
         feed_dict = {}
         feed_dict[self.headlines_placeholder] = headlines_batch
         feed_dict[self.bodies_placeholder] = bodies_batch
+        if self.config.similarity_metric_feature:
+            feed_dict[self.sim_scores_placeholder] = sim_scores_batch
         feed_dict[self.epoch_placeholder] = epoch
         feed_dict[self.dropout_placeholder] = dropout
         if labels_batch is not None:
@@ -382,12 +389,18 @@ class FNCModel(Model):
             # this will need to be a placeholder
             pred_input = tf.concat(axis=1,
                 values=[headline_hidden, body_hidden])
+            W_hidden_size = 2 * self.config.hidden_sizes[-1]
+            if self.config.similarity_metric_feature:
+                sim_scores = tf.expand_dims(self.sim_scores_placeholder, axis=1)
+                pred_input = tf.concat(axis=1,
+                    values=[pred_input, sim_scores])
+                W_hidden_size += 1
             with tf.variable_scope("prediction_op"):
-               W = tf.get_variable("W", (2 * self.config.hidden_sizes[-1],
-                   self.config.n_classes))
-               b = tf.get_variable("b", (self.config.n_classes),
-                   initializer=tf.constant_initializer(0.0), dtype=tf.float32)
-               preds = tf.matmul(pred_input, W) + b
+                W = tf.get_variable("W", (W_hidden_size,
+                    self.config.n_classes))
+                b = tf.get_variable("b", (self.config.n_classes),
+                    initializer=tf.constant_initializer(0.0), dtype=tf.float32)
+                preds = tf.matmul(pred_input, W) + b
             return preds
 
 
@@ -488,7 +501,8 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     weight_embeddings=False):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
-        train_bodies, train_stances, similarity_metric_feature, include_stopwords)
+        train_bodies, train_stances, include_stopwords, 
+        similarity_metric_feature)
     logging.info("%d training examples", len(fnc_data_train.headlines))
     logging.info("%d dev examples", len(fnc_data_dev.headlines))
     if max_headline_len is None:
@@ -526,14 +540,18 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         bodies_pc = None
 
     if config.method == "vanilla_bag_of_words":
+        logging.info("Precomputing training sentence embeddings ...")
         headlines_emb = util.sentence_embeddings(headline_vectors, dimension,
             max_headline_len, embeddings)
         bodies_emb = util.sentence_embeddings(body_vectors, dimension,
             max_body_len, embeddings)
-        training_data = zip(headlines_emb, bodies_emb, fnc_data_train.stances)
+        training_data = [headlines_emb, bodies_emb, fnc_data_train.stances]
     else:
-        training_data = zip(headline_vectors, body_vectors,
-            fnc_data_train.stances)
+        training_data = [headline_vectors, body_vectors, fnc_data_train.stances]
+
+    if similarity_metric_feature:
+        training_data.append(fnc_data_train.sim_scores)
+    training_data = zip(*training_data)
 
     # Vectorize and assemble the dev data; note that we use the training
     # maximum length
@@ -543,15 +561,19 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         known_words, max_body_len)
 
     if config.method == "vanilla_bag_of_words":
+        logging.info("Precomputing dev sentence embeddings ...")
         dev_headlines_emb = util.sentence_embeddings(dev_headline_vectors,
             dimension, max_headline_len, embeddings)
         dev_bodies_emb = util.sentence_embeddings(dev_body_vectors,
             dimension, max_body_len, embeddings)
-        dev_data = zip(dev_headlines_emb, dev_bodies_emb,
-            fnc_data_dev.stances)
+        dev_data = [dev_headlines_emb, dev_bodies_emb, fnc_data_dev.stances]
     else:
-        dev_data = zip(dev_headline_vectors, dev_body_vectors,
-            fnc_data_dev.stances)
+        dev_data = [dev_headline_vectors, dev_body_vectors,
+            fnc_data_dev.stances]
+
+    if similarity_metric_feature:
+        dev_data.append(fnc_data_dev.sim_scores)
+    dev_data = zip(*dev_data)
 
     with tf.Graph().as_default():
         logger.info("Building model...",)
@@ -569,14 +591,16 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
             logging.info('Outputting ...')
             output = model.output(session, dev_data)
 
-    headlines, bodies = output[0]
     indices_to_words = {word_indices[w] : w for w in word_indices}
+    # TODO(akshayka): Please code-review this. In particular,
+    # please validate whether dev_headline_vectors is an equivalent 
+    # representation of output[0][0], and dev_body_vectors for output[0][1]
     headlines = [' '.join(
         util.word_indices_to_words(h, indices_to_words))
-        for h in headlines]
+        for h in dev_headline_vectors]
     bodies = [' '.join(
         util.word_indices_to_words(b, indices_to_words))
-        for b in bodies]
+        for b in dev_body_vectors]
     output = zip(headlines, bodies, output[1], output[2])
 
     with open(model.config.eval_output, 'w') as f:
@@ -584,8 +608,6 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
             f.write("%s\t%s\tgold:%d\tpred:%d" % (
                 headline, body, label, prediction))
 
-
-# TODO(akshayka): Plotting code (loss / gradient size ... ) /
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Trains and tests FNCModel",
@@ -609,8 +631,9 @@ if __name__ == "__main__":
     command_parser.add_argument("-sw", "--include_stopwords", action="store_true",
         default=False, help="Include stopwords in data")
     command_parser.add_argument("-smf", "--similarity_metric_feature", type=str,
-        default=None, help="Type of similarity metric features to add; one of %s" %
-        pprint.pformat(FNCModel.SUPPORTED_SIMILARITY_METRIC_FEATS))
+        default=None, help="Type of similarity metric features to add; "
+        "one of %s" % pprint.pformat(
+        FNCModel.SUPPORTED_SIMILARITY_METRIC_FEATS))
     # ------------------------ NN Architecture ------------------------
     command_parser.add_argument("-mhl", "--max_headline_len", type=int,
         default=None, help="maximum number of words per headline; if None, "
@@ -664,6 +687,16 @@ if __name__ == "__main__":
     assert ARGS.method in FNCModel.SUPPORTED_METHODS
     if ARGS.method == "arora":
         ARGS.weight_embeddings = True
+    if ARGS.method == "vanilla_bag_of_words" and \
+        ARGS.train_embeddings_epoch is not None and \
+        ARGS.train_embeddings_epoch <= ARGS.n_epochs:
+        logging.fatal("Embeddings cannot be trained in the "
+            "vanilla_bag_of_words model.")
+        sys.exit(1)
+    if ARGS.method == "vanilla_bag_of_words" and len(ARGS.hidden_sizes) > 1:
+        logging.fatal("Multiple layer networks are not yet supported for "
+            "vanilla_bag_of_words.")
+        sys.exit(1)
 
     if ARGS.func is None:
         parser.print_help()
@@ -680,6 +713,7 @@ if __name__ == "__main__":
             penalty=ARGS.penalty,
             batch_size=ARGS.batch_size,
             n_epochs=ARGS.n_epochs,
+            similarity_metric_feature=ARGS.similarity_metric_feature,
             train_embeddings_epoch=ARGS.train_embeddings_epoch)
 
         handler = logging.FileHandler(config.log_output)

@@ -303,7 +303,6 @@ def minibatches(data, batch_size, shuffle=True):
 PAD_TOKEN = "___PPPADDD___"
 
 def sentence_embeddings(examples, dimension, max_len, embeddings):
-    logging.info("sentence emb...")
     emb = tf.constant(embeddings, dtype=tf.float32)
     x = tf.nn.embedding_lookup(emb, examples)
     x = tf.reshape(x, (-1, max_len, dimension))
@@ -316,7 +315,7 @@ def sentence_embeddings(examples, dimension, max_len, embeddings):
         X = sess.run(X)
     return X
 
-def countFeaturizer(data, binary_counts):
+def countFeaturizer(binary_counts, vocab=None):
     stemmer = PorterStemmer()
     analyzer = CountVectorizer(stop_words="english").build_analyzer()
 
@@ -324,29 +323,41 @@ def countFeaturizer(data, binary_counts):
         return (stemmer.stem(x) for x in analyzer(text))
 
     stemmed_vectorizer = CountVectorizer(analyzer=stemWords, 
-        binary=binary_counts)
+        binary=binary_counts, vocabulary=vocab)
     return stemmed_vectorizer
 
-def similarity_metrics(headlines, bodies, similarity_metric_feature):
-    if not similarity_metric_feature:
-        return None
-    binary_counts = True if similarity_metric_feature == "jaccard" else False
-    featurizer = countFeaturizer(headlines + bodies, binary_counts)
+def similarity_metrics(vectorizer, headlines, bodies, similarity_metric_feature):
+    assert similarity_metric_feature is not None
+    logging.info("Creating similarity metric features: %s ..." 
+        % similarity_metric_feature)
 
-    featurized_bodies = featurizer.fit_transform(headlines)
-    featurized_headlines = featurizer.fit_transform(bodies)
+    print "len headlines: %d, len bodies: %d" % (len(headlines), len(bodies))
 
-    if tfidf:
-        transformer = TfidfTransformer()
-        tfidf_headlines = transformer.fit_transform(featurized_headlines)
-        tfidf_bodies = transformer.fit_transform(featurized_bodies)
+    featurized_bodies = vectorizer.transform(headlines)
+    featurized_headlines = vectorizer.transform(bodies)
+
+    # TODO(delenn): implement tfidf weighting?
+    # if tfidf:
+    #     transformer = TfidfTransformer()
+    #     tfidf_headlines = transformer.fit_transform(featurized_headlines)
+    #     tfidf_bodies = transformer.fit_transform(featurized_bodies)
+
+    assert np.shape(featurized_bodies)[1] == np.shape(featurized_headlines)[1]
 
     if similarity_metric_feature == "jaccard":
         sim_scores = [jaccard_similarity_score(featurized_headlines[i], 
-            featurized_bodies[i]) for i in len(headlines)]
+            featurized_bodies[i]) for i in range(len(headlines))]
+
+
+        # sim_scores = []
+        # for i in range(len(headlines)):
+        #     sim_scores.append(jaccard_similarity_score(featurized_headlines[i]))
+        print "sim_scores length: %d" % len(sim_scores)
     else: # Use cosine similarity
         sim_scores = np.diagonal(cosine_similarity(featurized_headlines, 
             featurized_bodies))
+
+    logging.info("Finished similarity metric features ...")
     return sim_scores
 
 
@@ -546,17 +557,25 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     body_map = read_bodies(train_bodies_fstream, include_stopwords)
     text_bodies = [body_map[body_id] for body_id in body_ids]
     stances[1] = text_bodies
-    sim_scores = similarity_metrics(stances[0], stances[1], 
-        similarity_metric_feature)
     fnc_data = FNCData(
         headlines=stances[0], bodies=stances[1], stances=stances[2],
-        sim_scores=sim_scores, max_headline_len=0, max_body_len=0)
+        sim_scores=None, max_headline_len=0, max_body_len=0)
 
     # Populate training data from train_indices
     train_headlines = [fnc_data.headlines[i] for i in train_indices]
     train_bodies = [fnc_data.bodies[i] for i in train_indices]
-    train_sim_scores = [fnc_data.sim_scores[i] for i in train_indices] \
-        if similarity_metric_feature else None
+    train_sim_scores = None
+    if similarity_metric_feature is not None:
+        string_headlines = [" ".join(h) for h in train_headlines]
+        string_bodies = [" ".join(b) for b in train_bodies]
+        binary_counts = True if similarity_metric_feature == "jaccard" else False
+        train_vectorizer = countFeaturizer(binary_counts)
+        train_vectorizer = train_vectorizer.fit(string_headlines + string_bodies)
+        train_vocab = train_vectorizer.vocabulary_
+        train_sim_scores = similarity_metrics(train_vectorizer, string_headlines, 
+            string_bodies, similarity_metric_feature)
+
+
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
     body_lens = [len(body) for body in train_bodies]
@@ -568,11 +587,19 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
         max_headline_len=max_headline_len, max_body_len=max_body_len)
 
     # Populate test data from test_indices
-    test_sim_scores = [fnc_data.sim_scores[i] for i in test_indices] \
-        if similarity_metric_feature else None
+    test_headlines = [fnc_data.headlines[i] for i in test_indices]
+    test_bodies = [fnc_data.bodies[i] for i in test_indices]
+    test_sim_scores = None
+    if similarity_metric_feature is not None:
+        string_headlines = [" ".join(h) for h in test_headlines]
+        string_bodies = [" ".join(b) for b in test_bodies]
+        test_vectorizer = countFeaturizer(binary_counts, vocab=train_vocab)
+        test_sim_scores = similarity_metrics(test_vectorizer, string_headlines, 
+            string_bodies, similarity_metric_feature)
+
     fnc_data_test = FNCData(
-        headlines=[fnc_data.headlines[i] for i in test_indices],
-        bodies=[fnc_data.bodies[i] for i in test_indices],
+        headlines=test_headlines,
+        bodies=test_bodies,
         stances=[fnc_data.stances[i] for i in test_indices],
         sim_scores=test_sim_scores,
         max_headline_len=max_headline_len, max_body_len=max_body_len)
