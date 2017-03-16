@@ -21,7 +21,7 @@ import tensorflow as tf
 FNCData = namedtuple("FNCData", ["headlines", "bodies", "stances", "sim_scores",
     "max_headline_len", "max_body_len"])
 # TODO(akshayka): What about special punctuation like "@" or "#"?
-TOKEN_RE = r"[a-zA-Z]+[']?[a-zA-Z+]?"
+TOKEN_RE = r"[a-zA-Z]+[']?[a-zA-Z]?"
 
 LBLS = ["unrelated", "discuss", "disagree", "agree"]
 
