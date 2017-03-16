@@ -78,6 +78,7 @@ class Config:
             os.makedirs(self.output_path)
         self.model_output = self.output_path + "model.weights"
         self.eval_output = self.output_path + "results.txt"
+        self.error_output = self.output_path + "errors.txt"
         self.log_output = self.output_path + "log"
 
 
@@ -627,10 +628,14 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         for b in dev_body_vectors]
     output = zip(headlines, bodies, output[1], output[2])
 
-    with open(model.config.eval_output, 'w') as f:
+    with open(model.config.eval_output, 'w') as f, open(
+        model.config.error_output, "w") as g:
         for headline, body, label, prediction in output:
-            f.write("%s\t%s\tgold:%d\tpred:%d" % (
+            f.write("%s\t%s\tgold:%d\tpred:%d\n\n" % (
                 headline, body, label, prediction))
+            if label != prediction:
+                g.write("%s\t%s\tgold:%d\tpred:%d\n\n" % (
+                    headline, body, label, prediction))
 
 
 if __name__ == "__main__":
