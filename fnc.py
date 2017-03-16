@@ -88,7 +88,8 @@ class FNCModel(Model):
     """
     SUPPORTED_METHODS = frozenset(["rnn", "gru", "lstm", "bag_of_words",
         "vanilla_bag_of_words", "arora"])
-    SUPPORTED_SCORING_METRICS = frozenset(["manhattan", "cosine"])
+    SUPPORTED_SCORING_METRICS = frozenset(["manhattan", "cosine",
+        "soft_cosine"])
     SUPPORTED_SIMILARITY_METRIC_FEATS = frozenset(["cosine", "jaccard"])
 
     def add_placeholders(self):
@@ -382,6 +383,18 @@ class FNCModel(Model):
                     axis=1)
                 preds += regression_op(scores, self.config.degree,
                     "prediction_op/cosine")
+            if "soft_cosine" in self.config.scoring_metrics:
+                headline_norm = tf.nn.l2_normalize(headline_hidden, dim=1)
+                body_norm = tf.nn.l2_normalize(body_hidden, dim=1)
+                with tf.variable_scope("prediction_op/soft_cosine"):
+                    W = tf.get_variable("W", shape=(
+                        self.config.hidden_sizes[-1],
+                        self.config.hidden_sizes[-1]))
+                    # scores = (h_2 * W)  h_1^T
+                    scores = tf.reduce_sum(tf.multiply(
+                        tf.matmul(headline_norm, W), body_norm), axis=1)
+                    preds += regression_op(scores, self.config.degree,
+                        "prediction_op/soft_cosine")
             # shape (batch_size, 1)
             return preds
         else:
@@ -498,7 +511,7 @@ class FNCModel(Model):
 def do_train(train_bodies, train_stances, dimension, embedding_path, config, 
     max_headline_len=None, max_body_len=None, verbose=False, 
     include_stopwords=True, similarity_metric_feature=None, 
-    weight_embeddings=False):
+    weight_embeddings=False, idf=False):
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances, include_stopwords, 
@@ -541,10 +554,14 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 
     if config.method == "vanilla_bag_of_words":
         logging.info("Precomputing training sentence embeddings ...")
+        train_emb = embeddings
+        if idf:
+            train_emb = util.idf_embeddings(word_indices,
+                headline_vectors + body_vectors, train_emb)
         headlines_emb = util.sentence_embeddings(headline_vectors, dimension,
-            max_headline_len, embeddings)
+            max_headline_len, train_emb)
         bodies_emb = util.sentence_embeddings(body_vectors, dimension,
-            max_body_len, embeddings)
+            max_body_len, train_emb)
         training_data = [headlines_emb, bodies_emb, fnc_data_train.stances]
     else:
         training_data = [headline_vectors, body_vectors, fnc_data_train.stances]
@@ -562,10 +579,17 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
 
     if config.method == "vanilla_bag_of_words":
         logging.info("Precomputing dev sentence embeddings ...")
+        test_emb = embeddings
+        if idf:
+            # TODO(akshayka): Experiment with using whole corpus as
+            # documents vs just training vs just testing
+            test_emb = util.idf_embeddings(word_indices,
+                headline_vecotrs + dev_headline_vectors + body_vectors +
+                dev_body_vectors, test_emb)
         dev_headlines_emb = util.sentence_embeddings(dev_headline_vectors,
-            dimension, max_headline_len, embeddings)
+            dimension, max_headline_len, test_emb)
         dev_bodies_emb = util.sentence_embeddings(dev_body_vectors,
-            dimension, max_body_len, embeddings)
+            dimension, max_body_len, test_emb)
         dev_data = [dev_headlines_emb, dev_bodies_emb, fnc_data_dev.stances]
     else:
         dev_data = [dev_headline_vectors, dev_body_vectors,
@@ -628,6 +652,8 @@ if __name__ == "__main__":
     command_parser.add_argument("-we", "--weight_embeddings",
         action="store_true", default=False,
         help="Whether to weight word embeddings as per Arora's paper.")
+    command_parser.add_argument("-idf", action="store_true",
+        default=False, help="Whether to weight word embeddings with idf.")
     command_parser.add_argument("-sw", "--include_stopwords", action="store_true",
         default=False, help="Include stopwords in data")
     command_parser.add_argument("-smf", "--similarity_metric_feature", type=str,
@@ -731,4 +757,5 @@ if __name__ == "__main__":
             verbose=ARGS.verbose, 
             include_stopwords=ARGS.include_stopwords,
             similarity_metric_feature=ARGS.similarity_metric_feature,
-            weight_embeddings=ARGS.weight_embeddings)
+            weight_embeddings=ARGS.weight_embeddings,
+            idf=ARGS.idf)

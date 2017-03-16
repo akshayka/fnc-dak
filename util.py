@@ -433,8 +433,33 @@ def vectorize(examples, word_indices, known_words, max_len):
     return vectorized_examples
 
 
+def compute_idfs(indices_to_words, pad_idx, examples):
+    logging.info("Computing document frequencies ...")
+    df_counts = defaultdict(int)
+    for e in examples:
+        words_in_example = set([i[0] for i in e if i[0] != pad_idx])
+        for w_i in words_in_example:
+            df_counts[w_i] += 1
+
+    logging.info("Computing idfs ...")
+    num_docs = len(examples)
+    idfs = {}
+    for w_i,c in df_counts.iteritems():
+       idfs[w_i] = np.log(num_docs / (1 + c))
+    return idfs
+
+
+def idf_embeddings(word_indices, examples, embeddings):
+    pad_idx = word_indices[PAD_TOKEN]
+    idfs = compute_idfs(word_indices, pad_idx, examples)
+    idf_embeddings = np.copy(embeddings)
+    for w_i,idf  in idfs.iteritems():
+        idf_embeddings[w_i] *= idf
+    return idf_embeddings
+    
+
 def load_embeddings(word_indices, dimension=300,
-    embedding_path="glove/glove.6B.300d.txt", weight_embeddings=False,):
+    embedding_path="glove/glove.6B.300d.txt", weight_embeddings=False):
     embeddings = np.zeros([len(word_indices) + 1, dimension])
     glove_words = set([])
     weights = None if not weight_embeddings else \
