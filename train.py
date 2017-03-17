@@ -111,7 +111,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
     dev_data = zip(*dev_data)
 
     with tf.Graph().as_default():
-        logger.info("Building model...",)
+        logger.info("Building model %s ...", model)
         start = time.time()
         model_type = FNCModel if model == "fnc" else Seq2SeqModel
         model = model_type(config, max_headline_len, max_body_len, embeddings,

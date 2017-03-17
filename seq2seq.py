@@ -18,7 +18,7 @@ from fnc import FNCModel, Config
 class AttentionCell(tf.contrib.rnn.GRUCell):
     def __init__(self, num_units, encoder_outputs, scope=None):
         self.encoder_outputs = encoder_outputs
-        self.enc_norm = tf.nn.l2_normalize(ht, dim=2)
+        self.enc_norm = tf.nn.l2_normalize(self.encoder_outputs, dim=2)
         super(AttentionCell, self).__init__(num_units)
 
 
@@ -32,7 +32,7 @@ class AttentionCell(tf.contrib.rnn.GRUCell):
                 # seems strange.
                 # ht = _linear(gru_out, self._num_units, True, 1.0)
                 W = tf.get_variable("W", shape=(self._num_units,
-                    self.num_units))
+                    self._num_units))
                 ht = tf.matmul(gru_out, W)
                 ht = tf.expand_dims(ht, axis=1)
             # TODO(akshayka): We should probably normalize
@@ -43,7 +43,7 @@ class AttentionCell(tf.contrib.rnn.GRUCell):
             context = tf.reduce_sum(self.encoder_outputs * scores, axis=1)
             with tf.variable_scope("AttnConcat"):
                 W = tf.get_variable("W", shape=(2 * self._num_units,
-                    self.num_units))
+                    self._num_units))
                 cat = tf.concat(axis=1, values=[context, gru_out])
                 out = tf.nn.relu(tf.matmul(cat, W))
                 #out = tf.nn.relu(_linear([context, gru_out], self._num_units,
