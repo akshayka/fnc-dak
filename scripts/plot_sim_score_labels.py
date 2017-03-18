@@ -3,7 +3,9 @@ import pickle
 
 import matplotlib.pyplot as plt
 
-with open("sim_scores.pickle", "rb") as f:
+TYPE = "binary_cosine"
+TITLE_PREFIX = "Binary Cosine"
+with open("%s_sim_scores.pickle" % TYPE, "rb") as f:
     ss = pickle.load(f)
 
 with open("../fnc-1-data/train_stances.csv", "rb") as f:
@@ -30,7 +32,35 @@ plots(data_agree, "go", "agree")
 plt.yticks([0, 1, 2, 3])
 ax = plt.gca()
 ax.set_yticklabels(["unrelated", "discuss", "disagree", "agree"])
-plt.title("Cosine Similarity Scores vs. Stances")
-plt.xlabel("Cosine Similarity")
-plt.savefig("cosine_stances.png")
+plt.title("%s Similarity Scores vs. Stances" % TITLE_PREFIX)
+plt.xlabel("%s Similarity" % TITLE_PREFIX)
+plt.savefig("%s_stances.png" % TYPE)
 
+# See how well a quadratic regression in one variable would do
+import cvxpy as cvx
+import numpy as np
+
+ss = np.array(ss)
+q = cvx.Variable()
+m = cvx.Variable()
+b = cvx.Variable()
+preds = q * (ss ** 2) + m * ss + b
+obj = cvx.Minimize(cvx.norm(stances - preds, 1))
+prob = cvx.Problem(obj)
+prob.solve()
+
+pred_vals = preds.value
+pred_vals = np.round(pred_vals)
+pred_vals = np.maximum(np.minimum(pred_vals, 3),  0)
+unrelated_score = 0.25 * len(data_unrelated)
+max_score = unrelated_score + 1.0 * (len(ss) - len(data_unrelated))
+score = 0
+for l, l_hat in zip(stances, pred_vals):
+    if l == l_hat:
+        score += 0.25
+        if l != 0:
+            score += 0.5
+    if l in [1, 2, 3] and l_hat in [1, 2, 3]:
+        score += 0.25
+print "score %f" % (score / max_score)
+print "unrelated score %f" % (unrelated_score / max_score)
