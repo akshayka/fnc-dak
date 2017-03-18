@@ -87,6 +87,8 @@ class Seq2SeqModel(FNCModel):
             cell = self.get_rnn_cell("attention")(
                 num_units=self.config.hidden_sizes[0],
                 encoder_outputs=self.encoder_outputs)
+            cell = tf.contrib.rnn.DropoutWrapper(cell=cell, 
+                input_keep_prob=(1-self.dropout_placeholder))
             outputs, h = tf.nn.dynamic_rnn(cell=cell, inputs=inputs,
                 sequence_length=seqlen, dtype=tf.float32,
                 initial_state=old_h, scope=scope)
