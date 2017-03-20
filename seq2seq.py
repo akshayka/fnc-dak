@@ -105,12 +105,13 @@ class Seq2SeqModel(FNCModel):
             preds = self.add_scoring_metrics_pred_op(h_body, h)
         else:
             xav = tf.contrib.layers.xavier_initializer()
+            W_hidden_size = self.config.hidden_sizes[-1]
             if self.config.similarity_metric_feature:
                 sim_scores = tf.expand_dims(self.sim_scores_placeholder, axis=1)
                 h = tf.concat(axis=1, values=[h, sim_scores])
                 W_hidden_size += 1
             with tf.variable_scope("prediction_op"):
-                U = tf.get_variable("U", (self.config.hidden_sizes[0],
+                U = tf.get_variable("U", (W_hidden_size,
                     self.config.n_classes), initializer=xav)
                 b = tf.get_variable("b", (self.config.n_classes),
                     initializer=tf.constant_initializer(0.0), dtype=tf.float32)
