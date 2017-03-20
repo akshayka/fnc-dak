@@ -91,8 +91,8 @@ plot(k_agree, "r", length=0.7)
 plot(k_disagree, "b", length=0.65)
 
 
-plt.xlim((-0.1, 1.1))
-plt.ylim((-0.1, 1.1))
+plt.xlim((0, 1.1))
+plt.ylim((0, 1.1))
 
 plt.legend()
 plt.title("Mapping from Angles to Predictions")
