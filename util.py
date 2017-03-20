@@ -34,7 +34,7 @@ RELATED = [DISCUSS, DISAGREE, AGREE]
 
 STOPWORDS = set(stopwords.words('english'))
 
-
+SIM_SCORES_PATH = "sim_scores.pickle"
 
 # ----------------- Utilities for evaluation ------------------
 def to_table(data, row_labels, column_labels, precision=2, digits=4):
@@ -582,25 +582,35 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     body_map = read_bodies(train_bodies_fstream, include_stopwords)
     text_bodies = [body_map[body_id] for body_id in body_ids]
     stances[1] = text_bodies
+    sim_scores = None
+
+    if similarity_metric_feature is not None:
+        if similarity_metric_feature == "cosine" and \
+            os.path.isfile(SIM_SCORES_PATH):
+            logging.info("Found similarity metric features from file: %s ..."
+                % SIM_SCORES_PATH)
+            with open(SIM_SCORES_PATH) as f:
+                sim_scores = pickle.load(f)
+        else:
+            binary_counts = True if similarity_metric_feature == "jaccard" else False
+            string_headlines = [" ".join(h) for h in stances[0]]
+            string_bodies = [" ".join(b) for b in stances[1]]
+            vectorizer = countFeaturizer(binary_counts)
+            vectorizer = vectorizer.fit(string_headlines + string_bodies)
+            sim_scores = similarity_metrics(vectorizer, string_headlines, 
+                string_bodies, similarity_metric_feature)
+
+
     fnc_data = FNCData(
         headlines=stances[0], bodies=stances[1], stances=stances[2],
-        sim_scores=None, max_headline_len=0, max_body_len=0)
+        sim_scores=sim_scores, max_headline_len=0, max_body_len=0)
 
     # Populate training data from train_indices
     train_headlines = [fnc_data.headlines[i] for i in train_indices]
     train_bodies = [fnc_data.bodies[i] for i in train_indices]
     train_sim_scores = None
     if similarity_metric_feature is not None:
-        string_headlines = [" ".join(h) for h in train_headlines]
-        string_bodies = [" ".join(b) for b in train_bodies]
-        binary_counts = True if similarity_metric_feature == "jaccard" else False
-        train_vectorizer = countFeaturizer(binary_counts)
-        train_vectorizer = train_vectorizer.fit(string_headlines + string_bodies)
-        train_vocab = train_vectorizer.vocabulary_
-        train_sim_scores = similarity_metrics(train_vectorizer, string_headlines, 
-            string_bodies, similarity_metric_feature)
-
-
+        train_sim_scores = [fnc_data.sim_scores[i] for i in train_indices]
     headline_lens = [len(head) for head in train_headlines]
     max_headline_len = max(headline_lens)
     body_lens = [len(body) for body in train_bodies]
@@ -616,11 +626,7 @@ def load_and_preprocess_fnc_data(train_bodies_fstream, train_stances_fstream,
     test_bodies = [fnc_data.bodies[i] for i in test_indices]
     test_sim_scores = None
     if similarity_metric_feature is not None:
-        string_headlines = [" ".join(h) for h in test_headlines]
-        string_bodies = [" ".join(b) for b in test_bodies]
-        test_vectorizer = countFeaturizer(binary_counts, vocab=train_vocab)
-        test_sim_scores = similarity_metrics(test_vectorizer, string_headlines, 
-            string_bodies, similarity_metric_feature)
+        test_sim_scores = [fnc_data.sim_scores[i] for i in test_indices]
 
     fnc_data_test = FNCData(
         headlines=test_headlines,
