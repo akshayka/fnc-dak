@@ -275,7 +275,11 @@ class Model(object):
 
     def build(self):
         self.add_placeholders()
-        self.pred = self.add_prediction_op()
+        self.headline_hidden = self.add_hidden_op(input_type='headlines',
+            scope=self.headline_scope)
+        self.body_hidden = self.add_hidden_op(input_type='bodies',
+            scope=self.body_scope)
+        self.pred = self.add_prediction_op(self.headline_hidden, self.body_hidden)
         if self.config.scoring_metrics is not None:
             # TODO(akshayka): Should sim preds be integers?
             self.final_pred = tf.round(self.pred)

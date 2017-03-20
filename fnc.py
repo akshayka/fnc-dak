@@ -17,6 +17,8 @@ from datetime import datetime
 
 import tensorflow as tf
 import numpy as np
+import sklearn.decomposition
+import matplotlib.pyplot as plt
 
 import util
 from model import Model
@@ -333,7 +335,7 @@ class FNCModel(Model):
         return h
 
 
-    def add_prediction_op(self):
+    def add_prediction_op(self, headline_hidden, body_hidden):
         """Adds Ops for prediction (excluding the softmax) to the graph.
 
         Args:
@@ -361,10 +363,10 @@ class FNCModel(Model):
                 preds += b
             return preds
 
-        headline_hidden = self.add_hidden_op(input_type='headlines',
-            scope=self.headline_scope)
-        body_hidden = self.add_hidden_op(input_type='bodies',
-            scope=self.body_scope)
+#        headline_hidden = self.add_hidden_op(input_type='headlines',
+ #           scope=self.headline_scope)
+  #      body_hidden = self.add_hidden_op(input_type='bodies',
+   #         scope=self.body_scope)
 
         # TODO(akshayka): Experiment with using the cosine similarity
         # as the similarity metric, instead of the l1 norm?
@@ -508,11 +510,79 @@ class FNCModel(Model):
 
         self.build()
 
+    def get_hidden_headlines_op(self):
+        return self.add_hidden_op(self.headline_scope, self.headline_scope)
+
+    def get_hidden_bodies_op(self):
+        return self.add_hidden_op(self.body_scope, self.body_scope)
+
+# def predict(train_bodies, train_stances, dimension, embedding_path, config, 
+#     max_headline_len=None, max_body_len=None, verbose=False, 
+#     include_stopwords=True, similarity_metric_feature=None, 
+#     weight_embeddings=False, idf=False):
+
+#     MODEL_PATH = "notable_results/20170312_124953_300d_1L_vanilla_bag_of_words_89/checkpoint"
+
+#     logging.info("Loading training and dev data ...")
+#     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
+#         train_bodies, train_stances, include_stopwords, 
+#         similarity_metric_feature)
+#     logging.info("%d training examples", len(fnc_data_train.headlines))
+#     logging.info("%d dev examples", len(fnc_data_dev.headlines))
+#     if max_headline_len is None:
+#         max_headline_len = fnc_data_train.max_headline_len
+#     if max_body_len is None:
+#         max_body_len = fnc_data_train.max_body_len
+#     logging.info("Max headline length: %d", max_headline_len)
+#     logging.info("Max body length: %d", max_body_len)
+
+#     # For convenience, create the word indices map over the entire dataset
+#     logging.info("Building word-to-index map ...")
+#     corpus = ([w for bod in fnc_data.bodies for w in bod] +
+#         [w for headline in fnc_data.headlines for w in headline])
+#     word_indices = util.process_corpus(corpus)
+#     logging.info("Building embedding matrix ...")
+#     embeddings, known_words = util.load_embeddings(word_indices=word_indices,
+#         dimension=dimension, embedding_path=embedding_path,
+#         weight_embeddings=weight_embeddings)
+
+#     logging.info("Vectorizing data ...")
+#     # Vectorize and assemble the training data
+#     headline_vectors = util.vectorize(fnc_data_dev.headlines, word_indices,
+#         known_words, max_headline_len)
+#     body_vectors = util.vectorize(fnc_data_dev.bodies, word_indices,
+#         known_words, max_body_len)
+
+#     model = FNCModel(config, max_headline_len, max_body_len, embeddings,
+#         headlines_pc=None, bodies_pc=None, verbose=verbose)
+
+
+#     with tf.Session() as sess:
+#         sess.run(tf.initialize_all_variables())
+#         saver = tf.train.Saver()
+#         saver.restore(sess, MODEL_PATH)
+
+#         h_headlines = sess.run(model.get_hidden_headlines_op, 
+#             feed_dict={self.headlines_placeholder:headline_vectors})
+#         h_bodies = sess.run(model.get_hidden_bodies_op, 
+#             feed_dict={self.bodies_placeholder:body_vectors})
+
+#     h_h_reduced = sklearn.decomposition(PCA(n_components=2))
+#     h_b_reduced = sklearn.decomposition(PCA(n_components=2))
+
+#     headlines_norms = np.linalg.norm(h_h_reduced, axis=0)
+#     bodies_norms = np.linalg.norm(h_b_reduced, axis=0)
+
+#     plt.plot(headlines_norms[0][0], headlines_norms[0][1], linewidth=2.0)
+
 
 def do_train(train_bodies, train_stances, dimension, embedding_path, config, 
     max_headline_len=None, max_body_len=None, verbose=False, 
     include_stopwords=True, similarity_metric_feature=None, 
     weight_embeddings=False, idf=False):
+
+
+
     logging.info("Loading training and dev data ...")
     fnc_data, fnc_data_train, fnc_data_dev = util.load_and_preprocess_fnc_data(
         train_bodies, train_stances, include_stopwords, 
@@ -613,8 +683,28 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
             session.run(init)
             logging.info('Fitting ...')
             model.fit(session, saver, training_data, dev_data)
+
+            fd = model.create_feed_dict(dev_headlines_emb, dev_bodies_emb, 0)
+            h_headlines = session.run(model.headline_hidden, 
+                feed_dict=fd)
+            h_bodies = session.run(model.body_hidden, 
+                feed_dict=fd)
+            headlines_norm = h_headlines / np.linalg.norm(h_headlines, axis=1)[:,np.newaxis]
+            bodies_norm = h_bodies / np.linalg.norm(h_bodies, axis=1)[:,np.newaxis]
+            cosine = np.sum(headlines_norm * bodies_norm, axis=1)
+            pca = sklearn.decomposition.PCA(n_components=2)
+            h_h_reduced = pca.fit_transform(h_headlines)
+            h_b_reduced = pca.fit_transform(h_bodies)
+
+
             logging.info('Outputting ...')
             output = model.output(session, dev_data)
+            preds = output[2]
+            np.save("headline_hidden_pca", h_h_reduced)
+            np.save("body_hidden_pca", h_b_reduced)
+            np.save("cosine_pca", cosine)
+            np.save("stances_for_pca_run", fnc_data_dev.stances)
+            np.save("preds_for_pca_run", preds)
 
     indices_to_words = {word_indices[w] : w for w in word_indices}
     # TODO(akshayka): Please code-review this. In particular,
@@ -627,6 +717,7 @@ def do_train(train_bodies, train_stances, dimension, embedding_path, config,
         util.word_indices_to_words(b, indices_to_words))
         for b in dev_body_vectors]
     output = zip(headlines, bodies, output[1], output[2])
+
 
     with open(model.config.eval_output, 'w') as f, open(
         model.config.error_output, "w") as g:
