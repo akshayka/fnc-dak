@@ -5,7 +5,7 @@ import pickle
 import csv
 
 NORMALIZE = False
-TYPE = "headlines"
+TYPE = "bodies"
 
 
 PATH = "../pca/"

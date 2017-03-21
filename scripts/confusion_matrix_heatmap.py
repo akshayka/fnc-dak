@@ -7,13 +7,24 @@ conf_arr = np.array([[7421, 175, 40, 5],
             [14, 124, 145, 403]])
 
 norm_conf = []
-for i in conf_arr:
+
+temp_col_arr = []
+
+for i in conf_arr.T:
     a = 0
     tmp_arr = []
     a = sum(i, 0)
     for j in i:
         tmp_arr.append(float(j)/float(a))
-    norm_conf.append(tmp_arr)
+    temp_col_arr.append(tmp_arr)
+    # norm_conf.append(tmp_arr)
+
+
+
+temp_col_arr = np.array(temp_col_arr)
+norm_conf = (temp_col_arr.T).tolist()
+
+
 
 fig = plt.figure()
 plt.clf()
@@ -37,6 +48,6 @@ plt.xticks(range(width), LABELS)
 plt.yticks(range(height), LABELS)
 plt.xlabel('Guess')
 plt.ylabel('Gold')
-plt.title("Row-Normalized Confusion Matrix")
+plt.title("Column-Normalized Confusion Matrix")
 # plt.show()
-plt.savefig('../plots/confusion_matrix_row.png', format='png')
+plt.savefig('../plots/confusion_matrix_col.png', format='png')
